@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS Variables */
+:root {
+  --maroon: #800000;
+  --maroon-dark: #600000;
+  --blue-accent: #4A90D9;
+  --purple-accent: #8B5CF6;
+  --cream: #fdf8f0;
+}
+
+/* Base Styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #ffffff;
+  color: #1a1a1a;
+  line-height: 1.6;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--maroon);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--maroon-dark);
+}
+
+/* Typography */
+.heading-serif {
+  font-family: 'Noticia Text', Georgia, serif;
+}
+
+/* Glassmorphism Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Geometric Pattern Overlay */
+.geometric-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.geometric-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100px;
+  height: 100%;
+  background: linear-gradient(135deg, var(--blue-accent) 0%, var(--purple-accent) 100%);
+  clip-path: polygon(0 0, 100% 0, 60% 100%, 0 100%);
+  opacity: 0.15;
+}
+
+/* Card Hover Effect */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Platform Icon Styles */
+.platform-icon {
+  transition: all 0.2s ease;
+}
+
+.platform-icon:hover {
+  transform: scale(1.1);
+}
+
+/* YouTube Badge */
+.youtube-badge {
+  background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+}
+
+/* Spotify Badge */
+.spotify-badge {
+  background: linear-gradient(135deg, #1DB954 0%, #169c46 100%);
+}
+
+/* Apple Podcast Badge */
+.apple-badge {
+  background: linear-gradient(135deg, #9933FF 0%, #7B2BFF 100%);
+}
+
+/* Amazon Music Badge */
+.amazon-badge {
+  background: linear-gradient(135deg, #00A8E1 0%, #0088B7 100%);
+}
+
+/* Section Divider */
+.section-divider {
+  height: 4px;
+  background: linear-gradient(90deg, var(--maroon) 0%, var(--blue-accent) 50%, var(--purple-accent) 100%);
+}
+
+/* Fade In Animation */
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* Button Styles */
+.btn-primary {
+  @apply px-6 py-3 bg-maroon-700 text-white font-medium rounded-lg 
+         transition-all duration-300 hover:bg-maroon-800 
+         focus:ring-4 focus:ring-maroon-300 focus:outline-none;
+}
+
+.btn-secondary {
+  @apply px-6 py-3 bg-white text-maroon-700 font-medium rounded-lg 
+         border-2 border-maroon-700 transition-all duration-300 
+         hover:bg-maroon-50 focus:ring-4 focus:ring-maroon-100 focus:outline-none;
+}
+
+/* Input Styles */
+.input-field {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg 
+         focus:ring-2 focus:ring-maroon-500 focus:border-maroon-500 
+         transition-all duration-200 outline-none;
+}
+
+/* Badge Styles */
+.badge {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider;
+}
+
+.badge-research {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.badge-upcoming {
+  @apply bg-green-100 text-green-800;
+}
+
+.badge-past {
+  @apply bg-gray-100 text-gray-800;
+}
+
+/* Loading Skeleton */
+.skeleton {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* Responsive Grid */
+.podcast-grid {
+  @apply grid gap-6 
+         grid-cols-1 
+         md:grid-cols-2 
+         lg:grid-cols-3;
+}
+
+/* Hero Section */
+.hero-gradient {
+  background: linear-gradient(180deg, var(--cream) 0%, #ffffff 100%);
+}
