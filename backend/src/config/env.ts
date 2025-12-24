@@ -1,7 +1,30 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-export const config = {
+interface Config {
+    mongodb: {
+        uri: string;
+    };
+    jwt: {
+        secret: string;
+        refreshSecret: string;
+        expiresIn: string;
+        refreshExpiresIn: string;
+    };
+    server: {
+        port: number;
+        nodeEnv: string;
+    };
+    cors: {
+        frontendUrl: string;
+    };
+    admin: {
+        email: string;
+        password: string;
+    };
+}
+
+export const config: Config = {
     mongodb: {
         uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/business-talk',
     },

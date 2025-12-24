@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { User, IUser } from '../models/User';
 import { config } from '../config/env';
 import { AuthRequest } from '../middleware/auth';
@@ -19,13 +19,13 @@ const generateTokens = (user: IUser) => {
     const accessToken = jwt.sign(
         { id: user._id, email: user.email, role: user.role },
         config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn }
+        { expiresIn: config.jwt.expiresIn } as SignOptions
     );
 
     const refreshToken = jwt.sign(
         { id: user._id },
         config.jwt.refreshSecret,
-        { expiresIn: config.jwt.refreshExpiresIn }
+        { expiresIn: config.jwt.refreshExpiresIn } as SignOptions
     );
 
     return { accessToken, refreshToken };
