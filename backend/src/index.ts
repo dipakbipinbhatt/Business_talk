@@ -20,9 +20,34 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
-// CORS
+// CORS - Allow frontend and all Render deployments
 app.use(cors({
-    origin: [config.cors.frontendUrl, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        // Allow localhost for development
+        if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+            return callback(null, true);
+        }
+        
+        // Allow Render.com deployments
+        if (origin.includes('.onrender.com')) {
+            return callback(null, true);
+        }
+        
+        // Allow configured frontend URL
+        if (origin === config.cors.frontendUrl) {
+            return callback(null, true);
+        }
+        
+        // Allow Netlify and Vercel deployments
+        if (origin.includes('.netlify.app') || origin.includes('.vercel.app')) {
+            return callback(null, true);
+        }
+        
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
 }));
 
@@ -41,15 +66,48 @@ app.use(express.urlencoded({ extended: true }));
 // Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/podcasts', podcastRoutes);
-app.use('/api/blogs', blogRoutes);
+// Root route - API documentation
+app.get('/', (_req, res) => {
+    res.json({
+        message: 'Business Talk API',
+        version: '1.0.0',
+        status: 'running',
+        endpoints: {
+            health: '/api/health',
+            auth: {
+                login: 'POST /api/auth/login',
+                register: 'POST /api/auth/register',
+                refresh: 'POST /api/auth/refresh',
+                me: 'GET /api/auth/me',
+            },
+            podcasts: {
+                getAll: 'GET /api/podcasts',
+                getOne: 'GET /api/podcasts/:id',
+                create: 'POST /api/podcasts (admin)',
+                update: 'PUT /api/podcasts/:id (admin)',
+                delete: 'DELETE /api/podcasts/:id (admin)',
+            },
+            blogs: {
+                getAll: 'GET /api/blogs',
+                getOne: 'GET /api/blogs/:id',
+                create: 'POST /api/blogs (admin)',
+                update: 'PUT /api/blogs/:id (admin)',
+                delete: 'DELETE /api/blogs/:id (admin)',
+            },
+        },
+        documentation: 'See README.md for full API documentation',
+    });
+});
 
 // Health check
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/podcasts', podcastRoutes);
+app.use('/api/blogs', blogRoutes);
 
 // 404 handler
 app.use((_req, res) => {
