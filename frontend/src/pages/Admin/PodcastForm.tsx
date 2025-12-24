@@ -22,7 +22,6 @@ export default function PodcastForm() {
         register,
         handleSubmit,
         setValue,
-        watch,
         formState: { errors },
     } = useForm<PodcastInput>({
         defaultValues: {

@@ -15,7 +15,7 @@ import {
     Eye,
     EyeOff,
 } from 'lucide-react';
-import { podcastAPI, blogAPI, Podcast, Blog } from '../../services/api';
+import { podcastAPI, blogAPI, Blog } from '../../services/api';
 import { useAuthStore, usePodcastStore } from '../../store/useStore';
 
 type ActiveTab = 'podcasts' | 'blogs';

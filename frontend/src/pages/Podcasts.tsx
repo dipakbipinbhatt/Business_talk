@@ -5,7 +5,7 @@ import { podcastAPI, Podcast } from '../services/api';
 import { usePodcastStore } from '../store/useStore';
 
 export default function Podcasts() {
-    const { podcasts, upcomingPodcasts, pastPodcasts, setPodcasts, setLoading, isLoading } = usePodcastStore();
+    const { upcomingPodcasts, pastPodcasts, setPodcasts, setLoading, isLoading } = usePodcastStore();
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 

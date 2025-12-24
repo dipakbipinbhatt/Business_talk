@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Youtube, Headphones, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PodcastCard from '../components/podcast/PodcastCard';
-import { podcastAPI, Podcast } from '../services/api';
+import { podcastAPI } from '../services/api';
 import { usePodcastStore } from '../store/useStore';
 import logoImage from '../assets/logo.jpg';
 
