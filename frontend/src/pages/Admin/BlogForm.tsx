@@ -53,7 +53,8 @@ export default function BlogForm() {
     const fetchBlog = async (blogId: string) => {
         setIsLoading(true);
         try {
-            const response = await blogAPI.getById(blogId);
+            // Use admin endpoint to fetch any blog including drafts
+            const response = await blogAPI.getAdminById(blogId);
             const blog = response.data.blog;
             setFormData({
                 title: blog.title,

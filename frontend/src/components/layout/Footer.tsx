@@ -11,11 +11,6 @@ export default function Footer() {
                     {/* Brand */}
                     <div className="col-span-1 md:col-span-2">
                         <div className="flex items-center space-x-3 mb-4">
-                            <img
-                                src="https://static.wixstatic.com/media/70d1c9_f0f4073d229d4e559e4cc6cea217ea88~mv2.png/v1/fill/w_200,h_202,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Trademarked%20Logo.png"
-                                alt="Business Talk Logo"
-                                className="w-8 h-8 object-contain"
-                            />
                             <span className="text-xl font-bold heading-serif text-white">
                                 Business Talk
                             </span>

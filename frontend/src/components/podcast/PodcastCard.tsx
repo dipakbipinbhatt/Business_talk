@@ -47,11 +47,25 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
 
     const youtubeId = extractYoutubeId(podcast.youtubeUrl);
 
-    // Determine thumbnail URL - custom thumbnail takes priority, then YouTube thumbnail
+    // Check if guestImage is a valid URL (not a default/placeholder)
+    const isValidGuestImage = (url?: string) => {
+        if (!url) return false;
+        if (url === '/default-avatar.png' || url === '/uploads/default-avatar.png') return false;
+        if (url.startsWith('http://') || url.startsWith('https://')) return true;
+        return false;
+    };
+
+    // Determine thumbnail URL - custom thumbnail takes priority, then guestImage, then YouTube thumbnail
     const getThumbnailUrl = () => {
-        if (podcast.thumbnailImage) {
+        // First priority: explicit thumbnailImage
+        if (podcast.thumbnailImage && podcast.thumbnailImage.startsWith('http')) {
             return podcast.thumbnailImage;
         }
+        // Second priority: valid guestImage URL (for upcoming episodes especially)
+        if (isValidGuestImage(podcast.guestImage)) {
+            return podcast.guestImage;
+        }
+        // Third priority: YouTube thumbnail
         if (youtubeId) {
             return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
         }
@@ -87,11 +101,13 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                             </div>
                         ) : (
                             <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-maroon-100 to-maroon-200">
-                                <img
-                                    src="https://static.wixstatic.com/media/70d1c9_f0f4073d229d4e559e4cc6cea217ea88~mv2.png/v1/fill/w_200,h_202,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Trademarked%20Logo.png"
-                                    alt="Business Talk"
-                                    className="w-16 h-16 opacity-50"
-                                />
+                                <div className="w-16 h-16 rounded-full bg-maroon-300 flex items-center justify-center">
+                                    <svg className="w-8 h-8 text-maroon-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                                        <line x1="12" y1="19" x2="12" y2="22" />
+                                    </svg>
+                                </div>
                             </div>
                         )}
                         {/* Episode Badge */}
@@ -222,12 +238,6 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                 {/* Episode Badge */}
                 <div className="absolute top-3 left-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-black rounded shadow-lg">
                     EP #{podcast.episodeNumber}
-                </div>
-                {/* Business Talk Mini Logo */}
-                <div className="absolute top-3 right-3 w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center shadow-lg">
-                    <span className="text-white text-[6px] font-bold text-center leading-tight">
-                        BT
-                    </span>
                 </div>
             </div>
 

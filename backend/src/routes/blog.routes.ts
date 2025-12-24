@@ -1,26 +1,28 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth.js';
 import {
     getAllBlogs,
     getAdminBlogs,
     getBlogById,
+    getAdminBlogById,
     createBlog,
     updateBlog,
     deleteBlog,
     getBlogStats,
-} from '../controllers/blog.controller';
+} from '../controllers/blog.controller.js';
 
 const router = Router();
 
-// Public routes
-router.get('/', getAllBlogs);
-router.get('/:id', getBlogById);
-
-// Protected routes (admin only)
+// Protected routes (admin only) - MUST come before /:id to avoid conflicts
 router.get('/admin/all', authenticateToken, getAdminBlogs);
 router.get('/admin/stats', authenticateToken, getBlogStats);
+router.get('/admin/:id', authenticateToken, getAdminBlogById);  // Admin can view any blog including drafts
 router.post('/', authenticateToken, createBlog);
 router.put('/:id', authenticateToken, updateBlog);
 router.delete('/:id', authenticateToken, deleteBlog);
+
+// Public routes - dynamic :id route MUST come last
+router.get('/', getAllBlogs);
+router.get('/:id', getBlogById);
 
 export default router;

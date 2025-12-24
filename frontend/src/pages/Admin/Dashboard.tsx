@@ -145,9 +145,11 @@ export default function AdminDashboard() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-maroon-700 rounded-full flex items-center justify-center">
-                                <Mic className="w-5 h-5 text-white" />
-                            </div>
+                            <img
+                                src="https://static.wixstatic.com/media/70d1c9_87bf0049d7e1494e8f34e0fa16feb5b2~mv2.png/v1/fill/w_197,h_60,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Business%20Talk%20logo.png"
+                                alt="Business Talk Logo"
+                                className="h-10 w-auto"
+                            />
                             <div>
                                 <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
                                 <p className="text-xs text-gray-500">Welcome, {user?.name}</p>
@@ -178,8 +180,8 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => setActiveTab('podcasts')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'podcasts'
-                                ? 'bg-maroon-700 text-white'
-                                : 'bg-white text-gray-600 hover:bg-gray-50'
+                            ? 'bg-maroon-700 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         <Mic className="w-5 h-5" />
@@ -188,8 +190,8 @@ export default function AdminDashboard() {
                     <button
                         onClick={() => setActiveTab('blogs')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'blogs'
-                                ? 'bg-maroon-700 text-white'
-                                : 'bg-white text-gray-600 hover:bg-gray-50'
+                            ? 'bg-maroon-700 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-50'
                             }`}
                     >
                         <FileText className="w-5 h-5" />

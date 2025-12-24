@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api';
+// Use environment variable in production, fallback to /api for local dev with proxy
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance
 const api = axios.create({
@@ -101,9 +102,12 @@ export const blogAPI = {
 
     getById: (id: string) => api.get(`/blogs/${id}`),
 
+    getAdminById: (id: string) => api.get(`/blogs/admin/${id}`),
+
     getAdminAll: () => api.get('/blogs/admin/all'),
 
     getStats: () => api.get('/blogs/admin/stats'),
+
 
     create: (data: BlogInput) => api.post('/blogs', data),
 
