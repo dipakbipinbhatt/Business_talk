@@ -1,7 +1,7 @@
 import { Response } from 'express';
-import { Podcast } from '../models/Podcast.js';
-import { AuthRequest } from '../middleware/auth.js';
-import { isDBConnected } from '../config/db.js';
+import { Podcast } from '../models/Podcast';
+import { AuthRequest } from '../middleware/auth';
+import { isDBConnected } from '../config/db';
 
 // Mock data for demo mode
 const mockPodcasts = [

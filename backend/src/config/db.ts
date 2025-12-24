@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { config } from './env.js';
+import { config } from './env';
 
 let isConnected = false;
 
@@ -55,7 +55,7 @@ export const isDBConnected = () => isConnected;
 // Seed admin user
 async function seedAdminUser() {
     try {
-        const { User } = await import('../models/User.js');
+        const { User } = await import('../models/User');
         const existingAdmin = await User.findOne({ email: config.admin.email });
 
         if (!existingAdmin) {
@@ -78,7 +78,7 @@ async function seedAdminUser() {
 // Seed sample podcasts if database is empty
 async function seedSampleData() {
     try {
-        const { Podcast } = await import('../models/Podcast.js');
+        const { Podcast } = await import('../models/Podcast');
         const count = await Podcast.countDocuments();
 
         if (count === 0) {

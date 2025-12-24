@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth';
 import {
     getAllBlogs,
     getAdminBlogs,
@@ -9,7 +9,7 @@ import {
     updateBlog,
     deleteBlog,
     getBlogStats,
-} from '../controllers/blog.controller.js';
+} from '../controllers/blog.controller';
 
 const router = Router();
 

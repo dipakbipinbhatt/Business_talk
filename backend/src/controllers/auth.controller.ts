@@ -1,9 +1,9 @@
 import { Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { User, IUser } from '../models/User.js';
-import { config } from '../config/env.js';
-import { AuthRequest } from '../middleware/auth.js';
-import { isDBConnected } from '../config/db.js';
+import { User, IUser } from '../models/User';
+import { config } from '../config/env';
+import { AuthRequest } from '../middleware/auth';
+import { isDBConnected } from '../config/db';
 
 // Mock admin user for demo mode when MongoDB is not available
 const mockAdminUser = {

@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { config } from '../config/env.js';
-import { User } from '../models/User.js';
-import { isDBConnected } from '../config/db.js';
+import { config } from '../config/env';
+import { User } from '../models/User';
+import { isDBConnected } from '../config/db';
 
 export interface AuthRequest extends Request {
     user?: {

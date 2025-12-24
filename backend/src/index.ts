@@ -3,16 +3,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-import { config } from './config/env.js';
-import { connectDB } from './config/db.js';
-import authRoutes from './routes/auth.routes.js';
-import podcastRoutes from './routes/podcast.routes.js';
-import blogRoutes from './routes/blog.routes.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { config } from './config/env';
+import { connectDB } from './config/db';
+import authRoutes from './routes/auth.routes';
+import podcastRoutes from './routes/podcast.routes';
+import blogRoutes from './routes/blog.routes';
 
 const app = express();
 

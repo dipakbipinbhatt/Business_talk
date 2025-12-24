@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Blog } from '../models/Blog.js';
+import { Blog } from '../models/Blog';
 
 // Get all blogs (public - only published)
 export const getAllBlogs = async (req: Request, res: Response) => {

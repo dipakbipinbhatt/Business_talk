@@ -7,9 +7,9 @@ import {
     deletePodcast,
     uploadImage,
     getStats,
-} from '../controllers/podcast.controller.js';
-import { authenticateToken, requireAdmin } from '../middleware/auth.js';
-import { upload } from '../middleware/upload.js';
+} from '../controllers/podcast.controller';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { upload } from '../middleware/upload';
 
 const router = Router();
 

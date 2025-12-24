@@ -1,7 +1,7 @@
-import { connectDB } from './config/db.js';
-import { config } from './config/env.js';
-import { User } from './models/User.js';
-import { Podcast } from './models/Podcast.js';
+import { connectDB } from './config/db';
+import { config } from './config/env';
+import { User } from './models/User';
+import { Podcast } from './models/Podcast';
 
 const seedData = async () => {
     try {
