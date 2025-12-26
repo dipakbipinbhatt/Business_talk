@@ -146,9 +146,10 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center space-x-3">
                             <img
-                                src="https://static.wixstatic.com/media/70d1c9_87bf0049d7e1494e8f34e0fa16feb5b2~mv2.png/v1/fill/w_197,h_60,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Business%20Talk%20logo.png"
+                                src="/assets/logo.jpg"
                                 alt="Business Talk Logo"
                                 className="h-10 w-auto"
+                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
                             />
                             <div>
                                 <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
