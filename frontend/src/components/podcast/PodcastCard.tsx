@@ -22,35 +22,31 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
 
     const youtubeId = extractYoutubeId(podcast.youtubeUrl);
 
-    // Get thumbnail URL - simplified and more reliable
+    // Get thumbnail URL - simplified: use any available image
     const getThumbnailUrl = () => {
-        // First: Check for explicit thumbnailImage
-        if (podcast.thumbnailImage) {
-            // Accept any URL that looks valid
-            if (podcast.thumbnailImage.startsWith('http://') || podcast.thumbnailImage.startsWith('https://')) {
-                return podcast.thumbnailImage;
-            }
+        // Priority: thumbnailImage > guestImage > YouTube thumbnail
+        if (podcast.thumbnailImage && podcast.thumbnailImage.trim() !== '') {
+            return podcast.thumbnailImage;
         }
-        
-        // Second: Check for guestImage (valid URL)
-        if (podcast.guestImage) {
-            if (podcast.guestImage.startsWith('http://') || podcast.guestImage.startsWith('https://')) {
-                // Skip obvious placeholder URLs
-                if (!podcast.guestImage.includes('default-avatar') && !podcast.guestImage.includes('placeholder')) {
-                    return podcast.guestImage;
-                }
-            }
+        if (podcast.guestImage && podcast.guestImage.trim() !== '') {
+            return podcast.guestImage;
         }
-        
-        // Third: Try YouTube thumbnail
         if (youtubeId) {
             return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
         }
-        
+        return null;
+    };
+
+    // Get guest avatar - for small circular image
+    const getGuestAvatar = () => {
+        if (podcast.guestImage && podcast.guestImage.trim() !== '') {
+            return podcast.guestImage;
+        }
         return null;
     };
 
     const thumbnailUrl = getThumbnailUrl();
+    const guestAvatar = getGuestAvatar();
 
     // Featured variant - compact horizontal card for upcoming episodes
     if (variant === 'featured') {
@@ -62,54 +58,38 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                 className="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
             >
                 <div className="flex flex-col md:flex-row">
-                    {/* Thumbnail - Full visible with proper aspect ratio */}
+                    {/* Thumbnail */}
                     <div className="md:w-64 flex-shrink-0 relative bg-gray-100 overflow-hidden">
-                        {thumbnailUrl ? (
-                            <div className="aspect-video relative">
+                        <div className="aspect-video relative">
+                            {thumbnailUrl ? (
                                 <img
                                     src={thumbnailUrl}
-                                    alt={podcast.title}
+                                    alt={podcast.guestName}
                                     className="w-full h-full object-cover"
                                     loading="lazy"
                                     onError={(e) => {
                                         const target = e.target as HTMLImageElement;
-                                        // Try YouTube thumbnail if available
+                                        // Try YouTube thumbnail as last resort
                                         if (youtubeId && !target.src.includes('youtube.com')) {
-                                            target.src = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
-                                        } else if (youtubeId && target.src.includes('maxresdefault')) {
                                             target.src = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
                                         } else {
-                                            // Show placeholder
+                                            // Hide broken image, show placeholder
                                             target.style.display = 'none';
-                                            const parent = target.parentElement;
-                                            if (parent) {
-                                                parent.innerHTML = `
-                                                    <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-maroon-100 to-maroon-200">
-                                                        <div class="w-16 h-16 rounded-full bg-maroon-300 flex items-center justify-center">
-                                                            <svg class="w-8 h-8 text-maroon-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
-                                                                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                                                                <line x1="12" y1="19" x2="12" y2="22" />
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                `;
-                                            }
                                         }
                                     }}
                                 />
-                            </div>
-                        ) : (
-                            <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-maroon-100 to-maroon-200">
-                                <div className="w-16 h-16 rounded-full bg-maroon-300 flex items-center justify-center">
-                                    <svg className="w-8 h-8 text-maroon-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
-                                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                                        <line x1="12" y1="19" x2="12" y2="22" />
-                                    </svg>
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-maroon-100 to-maroon-200">
+                                    <div className="w-16 h-16 rounded-full bg-maroon-300 flex items-center justify-center">
+                                        <svg className="w-8 h-8 text-maroon-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                                            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                                            <line x1="12" y1="19" x2="12" y2="22" />
+                                        </svg>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                         {/* Episode Badge */}
                         <div className="absolute top-2 left-2 px-2 py-1 bg-maroon-700 text-white text-xs font-bold rounded shadow-lg z-10">
                             EP #{podcast.episodeNumber}
@@ -132,24 +112,15 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                             {/* Middle: Guest Info */}
                             <div className="flex items-center space-x-3 my-2">
                                 <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ring-2 ring-gray-300">
-                                    {podcast.guestImage && podcast.guestImage !== '/uploads/default-avatar.png' && podcast.guestImage.startsWith('http') ? (
-                                        <img 
-                                            src={podcast.guestImage} 
-                                            alt={podcast.guestName} 
+                                    {guestAvatar ? (
+                                        <img
+                                            src={guestAvatar}
+                                            alt={podcast.guestName}
                                             className="w-full h-full object-cover"
                                             loading="lazy"
                                             onError={(e) => {
                                                 const target = e.target as HTMLImageElement;
                                                 target.style.display = 'none';
-                                                if (target.parentElement) {
-                                                    target.parentElement.innerHTML = `
-                                                        <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-400">
-                                                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                                            </svg>
-                                                        </div>
-                                                    `;
-                                                }
                                             }}
                                         />
                                     ) : (
@@ -195,21 +166,14 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
         );
     }
 
-    // Grid variant (for past podcasts) - matches the original site's episode highlights
+    // Grid variant (for past podcasts)
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="bg-[#EBEBEB] rounded-lg shadow-md overflow-hidden card-hover group relative"
+            className="bg-white rounded-lg shadow-md overflow-hidden card-hover group relative"
         >
-            {/* Geometric Accent - Bottom Left */}
-            <div className="absolute bottom-0 left-0 w-20 h-20 overflow-hidden pointer-events-none">
-                <div className="absolute bottom-0 left-0 w-0 h-0 border-l-[50px] border-l-transparent border-b-[40px] border-b-purple-400 opacity-50"></div>
-                <div className="absolute bottom-0 left-2 w-0 h-0 border-l-[35px] border-l-transparent border-b-[28px] border-b-purple-500 opacity-60"></div>
-                <div className="absolute bottom-0 left-4 w-0 h-0 border-l-[20px] border-l-transparent border-b-[16px] border-b-purple-600 opacity-70"></div>
-            </div>
-
             {/* Thumbnail */}
             <div className="relative aspect-video bg-gray-100 overflow-hidden">
                 {thumbnailUrl ? (
@@ -221,30 +185,13 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                             loading="lazy"
                             onError={(e) => {
                                 const target = e.target as HTMLImageElement;
-                                // Try YouTube thumbnail if available
+                                // Try YouTube thumbnail as fallback
                                 if (youtubeId && !target.src.includes('youtube.com')) {
                                     target.src = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
                                 } else if (youtubeId && target.src.includes('maxresdefault')) {
                                     target.src = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
                                 } else {
-                                    // Show placeholder
                                     target.style.display = 'none';
-                                    const parent = target.parentElement;
-                                    if (parent) {
-                                        parent.innerHTML = `
-                                            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-maroon-100 to-maroon-200">
-                                                <div class="text-center">
-                                                    <div class="w-16 h-16 mx-auto bg-maroon-300 rounded-full flex items-center justify-center mb-2">
-                                                        <svg class="w-8 h-8 text-maroon-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 14a4 4 0 1 1 4-4 4 4 0 0 1-4 4z" />
-                                                            <circle cx="12" cy="12" r="2" />
-                                                        </svg>
-                                                    </div>
-                                                    <span class="text-sm font-medium text-maroon-600">Image Not Available</span>
-                                                </div>
-                                            </div>
-                                        `;
-                                    }
                                 }
                             }}
                         />
@@ -268,8 +215,9 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                         <div className="text-center">
                             <div className="w-16 h-16 mx-auto bg-maroon-300 rounded-full flex items-center justify-center mb-2">
                                 <svg className="w-8 h-8 text-maroon-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 14a4 4 0 1 1 4-4 4 4 0 0 1-4 4z" />
-                                    <circle cx="12" cy="12" r="2" />
+                                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                                    <line x1="12" y1="19" x2="12" y2="22" />
                                 </svg>
                             </div>
                             <span className="text-sm font-medium text-maroon-600">Coming Soon</span>
@@ -291,31 +239,22 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                 </div>
 
                 {/* Title */}
-                <h3 className="font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors text-sm leading-tight">
+                <h3 className="font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-maroon-700 transition-colors text-sm leading-tight">
                     {podcast.title}
                 </h3>
 
                 {/* Guest Info */}
                 <div className="flex items-center space-x-2 mb-3">
                     <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden shadow ring-2 ring-gray-300">
-                        {podcast.guestImage && podcast.guestImage !== '/uploads/default-avatar.png' && podcast.guestImage.startsWith('http') ? (
-                            <img 
-                                src={podcast.guestImage} 
-                                alt={podcast.guestName} 
+                        {guestAvatar ? (
+                            <img
+                                src={guestAvatar}
+                                alt={podcast.guestName}
                                 className="w-full h-full object-cover"
                                 loading="lazy"
                                 onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     target.style.display = 'none';
-                                    if (target.parentElement) {
-                                        target.parentElement.innerHTML = `
-                                            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-400">
-                                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                                </svg>
-                                            </div>
-                                        `;
-                                    }
                                 }}
                             />
                         ) : (
@@ -331,16 +270,16 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                 </div>
 
                 {/* Platform Links */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-300">
+                <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                     {podcast.youtubeUrl ? (
                         <a
                             href={podcast.youtubeUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center"
+                            className="text-sm font-bold text-maroon-700 hover:text-maroon-800 flex items-center"
                         >
                             <Youtube className="w-4 h-4 mr-1" />
-                            Click here to Watch
+                            Click Here to Watch
                         </a>
                     ) : (
                         <span className="text-xs text-gray-400">Coming Soon</span>

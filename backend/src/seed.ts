@@ -24,7 +24,7 @@ const seedData = async () => {
 
         // Create sample podcasts
         const samplePodcasts = [
-            // Upcoming podcasts from the original Business Talk site
+            // Upcoming podcasts - only 3, with proper promotional images
             {
                 title: 'Seeing Beyond the Here and Now: How Corporate Purpose Combats Corporate Myopia',
                 description: 'Research insights on how corporate purpose helps companies look beyond short-term pressures and embrace long-term sustainability.',
@@ -32,8 +32,8 @@ const seedData = async () => {
                 guestName: 'Dr. Tima Bansal',
                 guestTitle: 'Professor of Sustainability & Strategy, Canada Research Chair in Business Sustainability',
                 guestInstitution: 'Ivey Business School, Western University',
-                guestImage: 'https://static.wixstatic.com/media/70d1c9_c404612432ea4622a12c96c72d0e112d~mv2.png/v1/fill/w_196,h_196,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/tima%20bansal.png',
-                thumbnailImage: 'https://static.wixstatic.com/media/70d1c9_c404612432ea4622a12c96c72d0e112d~mv2.png/v1/fill/w_196,h_196,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/tima%20bansal.png',
+                guestImage: '/uploads/ep309-tima-bansal.jpg',
+                thumbnailImage: '/uploads/ep309-tima-bansal.jpg',
                 episodeNumber: 309,
                 scheduledDate: new Date('2025-12-22'),
                 scheduledTime: '10:00 PM IST',
@@ -46,8 +46,8 @@ const seedData = async () => {
                 guestName: 'Dr. Andrew Bernstein',
                 guestTitle: 'Professor of History, Specialty: Japanese History & Environmental History',
                 guestInstitution: 'Lewis & Clark',
-                guestImage: 'https://static.wixstatic.com/media/70d1c9_70c7dfe6ada94d1aa99e76bb9e21823a~mv2.png/v1/fill/w_196,h_196,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Andrew%20Bernstein.png',
-                thumbnailImage: 'https://static.wixstatic.com/media/70d1c9_70c7dfe6ada94d1aa99e76bb9e21823a~mv2.png/v1/fill/w_196,h_196,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Andrew%20Bernstein.png',
+                guestImage: '/uploads/ep277-andrew-bernstein.jpg',
+                thumbnailImage: '/uploads/ep277-andrew-bernstein.jpg',
                 episodeNumber: 277,
                 scheduledDate: new Date('2026-01-05'),
                 scheduledTime: '10:00 PM IST',
@@ -60,26 +60,12 @@ const seedData = async () => {
                 guestName: 'Dr. Amir Grinstein',
                 guestTitle: 'Patrick F. & Helen C. Walsh Research Professor, Thomas E. Moore Faculty Fellow, Marketing',
                 guestInstitution: "Northeastern University's D'Amore-McKim School of Business",
-                guestImage: 'https://ui-avatars.com/api/?name=Amir+Grinstein&size=196&background=8B1538&color=fff&bold=true',
-                thumbnailImage: 'https://ui-avatars.com/api/?name=Amir+Grinstein&size=196&background=8B1538&color=fff&bold=true',
+                guestImage: '/uploads/ep303-amir-grinstein.jpg',
+                thumbnailImage: '/uploads/ep303-amir-grinstein.jpg',
                 episodeNumber: 303,
                 scheduledDate: new Date('2026-01-05'),
                 scheduledTime: '11:30 PM IST',
                 tags: ['social change', 'marketing', 'interventions'],
-            },
-            {
-                title: "Unveiling Wisdom: Essential Lessons from Notable Books - The Leader's Checklist",
-                description: 'Insights on leadership principles and mission-critical practices from the renowned Wharton professor and leadership expert.',
-                category: 'upcoming',
-                guestName: 'Dr. Michael Useem',
-                guestTitle: 'William and Jacalyn Egan Professor of Management, Director, Wharton Center for Leadership and Change Management',
-                guestInstitution: 'The Wharton School',
-                guestImage: 'https://ui-avatars.com/api/?name=Michael+Useem&size=196&background=8B1538&color=fff&bold=true',
-                thumbnailImage: 'https://ui-avatars.com/api/?name=Michael+Useem&size=196&background=8B1538&color=fff&bold=true',
-                episodeNumber: 279,
-                scheduledDate: new Date('2026-01-06'),
-                scheduledTime: '10:00 PM IST',
-                tags: ['leadership', 'books', 'management'],
             },
             // Past podcasts
             {
