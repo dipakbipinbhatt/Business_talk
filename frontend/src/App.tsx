@@ -25,6 +25,7 @@ function App() {
                     <Route path="contact" element={<Contact />} />
                 </Route>
                 <Route path="/admin">
+                    <Route index element={<AdminLogin />} />
                     <Route path="login" element={<AdminLogin />} />
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="podcast/new" element={<PodcastForm />} />
