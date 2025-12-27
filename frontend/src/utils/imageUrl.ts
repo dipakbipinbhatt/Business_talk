@@ -5,7 +5,7 @@
 
 /**
  * Convert image path to full URL
- * @param path - Image path (can be /uploads/xxx, http://xxx, or empty)
+ * @param path - Image path (can be /uploads/xxx, http://xxx, data:xxx, or empty)
  * @returns Full URL or null if no valid path
  */
 export const getImageUrl = (path: string | undefined | null): string | null => {
@@ -14,6 +14,11 @@ export const getImageUrl = (path: string | undefined | null): string | null => {
     }
 
     const trimmedPath = path.trim();
+
+    // Base64 data URL - return as-is (important for MongoDB stored images!)
+    if (trimmedPath.startsWith('data:')) {
+        return trimmedPath;
+    }
 
     // Already a full HTTP URL - return as-is
     if (trimmedPath.startsWith('http://') || trimmedPath.startsWith('https://')) {
