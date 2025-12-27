@@ -142,7 +142,7 @@ export default function AdminLogin() {
                         <p className="text-xs text-gray-500 text-center">
                             <strong>Demo Credentials:</strong><br />
                             Email: admin@businesstalk.com<br />
-                            Password: admin123
+                            Password: Admin@123
                         </p>
                     </div>
                 </div>
