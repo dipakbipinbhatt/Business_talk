@@ -22,18 +22,35 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
 
     const youtubeId = extractYoutubeId(podcast.youtubeUrl);
 
+    // Helper to get full image URL
+    const getImageUrl = (path: string | undefined): string | null => {
+        if (!path || path.trim() === '') return null;
+
+        // Already a full URL
+        if (path.startsWith('http://') || path.startsWith('https://')) {
+            return path;
+        }
+
+        // Local /uploads/ path - prepend backend URL
+        if (path.startsWith('/uploads/')) {
+            const apiUrl = import.meta.env.VITE_API_URL || '';
+            // Remove /api suffix if present to get base backend URL
+            const backendUrl = apiUrl.replace(/\/api$/, '');
+            return backendUrl ? `${backendUrl}${path}` : path;
+        }
+
+        return path;
+    };
+
     // Get thumbnail URL - simplified: use any available image
     const getThumbnailUrl = () => {
         // Priority: thumbnailImage > guestImage > YouTube thumbnail
-        // Accept both http URLs and local /uploads/ paths
-        if (podcast.thumbnailImage && podcast.thumbnailImage.trim() !== '' &&
-            (podcast.thumbnailImage.startsWith('http') || podcast.thumbnailImage.startsWith('/uploads/'))) {
-            return podcast.thumbnailImage;
-        }
-        if (podcast.guestImage && podcast.guestImage.trim() !== '' &&
-            (podcast.guestImage.startsWith('http') || podcast.guestImage.startsWith('/uploads/'))) {
-            return podcast.guestImage;
-        }
+        const thumbnailUrl = getImageUrl(podcast.thumbnailImage);
+        if (thumbnailUrl) return thumbnailUrl;
+
+        const guestUrl = getImageUrl(podcast.guestImage);
+        if (guestUrl) return guestUrl;
+
         if (youtubeId) {
             return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
         }
@@ -42,10 +59,7 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
 
     // Get guest avatar - for small circular image
     const getGuestAvatar = () => {
-        if (podcast.guestImage && podcast.guestImage.trim() !== '') {
-            return podcast.guestImage;
-        }
-        return null;
+        return getImageUrl(podcast.guestImage);
     };
 
     const thumbnailUrl = getThumbnailUrl();
