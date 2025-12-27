@@ -75,97 +75,126 @@ async function seedAdminUser() {
     }
 }
 
-// Seed sample podcasts if database is empty
+// Seed sample podcasts - uses local images from frontend/public/uploads
 async function seedSampleData() {
     try {
         const { Podcast } = await import('../models/Podcast');
         const count = await Podcast.countDocuments();
 
-        if (count === 0) {
-            console.log('📦 Seeding sample podcast data...');
+        // Check if any podcasts have broken image URLs (wixstatic, unsplash, etc.)
+        const brokenImagePodcasts = await Podcast.countDocuments({
+            $or: [
+                { guestImage: { $regex: 'wixstatic|unsplash', $options: 'i' } },
+                { thumbnailImage: { $regex: 'wixstatic|unsplash', $options: 'i' } },
+            ]
+        });
 
+        // Force reseed if we have broken images
+        if (brokenImagePodcasts > 0) {
+            console.log(`⚠️ Found ${brokenImagePodcasts} podcasts with broken image URLs. Force reseeding...`);
+            await Podcast.deleteMany({});
+        }
+
+        const currentCount = await Podcast.countDocuments();
+
+        if (currentCount === 0) {
+            console.log('📦 Seeding podcast data with local images...');
+
+            // Sample podcasts with LOCAL images (from frontend/public/uploads/)
             const samplePodcasts = [
                 {
-                    title: 'Strategic Innovation in the Digital Age',
-                    description: 'An in-depth conversation about strategic innovation and how businesses can thrive in the rapidly evolving digital landscape.',
+                    title: 'Seeing Beyond the Here and Now: How Corporate Purpose Combats Corporate Myopia',
+                    description: 'Research insights on how corporate purpose helps companies look beyond short-term pressures and embrace long-term sustainability.',
                     category: 'upcoming',
-                    guestName: 'Dr. Sarah Mitchell',
+                    guestName: 'Dr. Tima Bansal',
+                    guestTitle: 'Professor of Sustainability & Strategy, Canada Research Chair in Business Sustainability',
+                    guestInstitution: 'Ivey Business School, Western University',
+                    guestImage: '/uploads/ep309-tima-bansal-promo.jpg',
+                    thumbnailImage: '/uploads/ep309-tima-bansal-promo.jpg',
+                    episodeNumber: 309,
+                    scheduledDate: new Date('2025-12-22'),
+                    scheduledTime: '10:00 PM IST',
+                    tags: ['sustainability', 'strategy', 'corporate purpose'],
+                },
+                {
+                    title: 'FUJI: A Mountain in the Making - Japanese History & Environment',
+                    description: 'An exploration of how Mount Fuji shaped Japanese culture, history, and environmental consciousness over centuries.',
+                    category: 'upcoming',
+                    guestName: 'Dr. Andrew Bernstein',
+                    guestTitle: 'Professor of Modern Japanese History',
+                    guestInstitution: 'Lewis & Clark College',
+                    guestImage: '/uploads/ep277-andrew-bernstein-promo.jpg',
+                    thumbnailImage: '/uploads/ep277-andrew-bernstein-promo.jpg',
+                    episodeNumber: 277,
+                    scheduledDate: new Date('2026-01-05'),
+                    scheduledTime: '10:00 PM IST',
+                    tags: ['history', 'Japan', 'environment'],
+                },
+                {
+                    title: 'Creating Social Change: From i-level to g-level Interventions',
+                    description: 'Research on effective interventions for social change, from individual behavior to global policy.',
+                    category: 'upcoming',
+                    guestName: 'Dr. Amir Grinstein',
+                    guestTitle: 'Patrick F. & Helen C. Walsh Research Professor',
+                    guestInstitution: "Northeastern University D'Amore-McKim School of Business",
+                    guestImage: '/uploads/ep303-amir-grinstein-promo.jpg',
+                    thumbnailImage: '/uploads/ep303-amir-grinstein-promo.jpg',
+                    episodeNumber: 303,
+                    scheduledDate: new Date('2026-01-05'),
+                    scheduledTime: '11:30 PM IST',
+                    tags: ['social change', 'marketing', 'research'],
+                },
+                {
+                    title: "Creativity in the Age of AI: Prof. Jerry Wind's Toolkit",
+                    description: 'Learn how to leverage AI tools while maintaining human creativity and strategic thinking.',
+                    category: 'past',
+                    guestName: 'Prof. Jerry Wind',
+                    guestTitle: 'Lauder Professor Emeritus of Marketing',
+                    guestInstitution: 'The Wharton School',
+                    guestImage: '',
+                    thumbnailImage: '',
+                    episodeNumber: 310,
+                    scheduledDate: new Date('2024-12-18'),
+                    scheduledTime: '10:00 AM EST',
+                    youtubeUrl: 'https://www.youtube.com/watch?v=_oqimM070f0',
+                    tags: ['AI', 'creativity', 'marketing'],
+                },
+                {
+                    title: 'Teaching with Cases: Methods from Dr. Urs Mueller',
+                    description: 'Master the art of case-based teaching from one of the leading experts in business education.',
+                    category: 'past',
+                    guestName: 'Dr. Urs Mueller',
                     guestTitle: 'Professor of Strategy',
-                    guestInstitution: 'Harvard Business School',
-                    guestImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400',
-                    thumbnailImage: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1280&h=720&fit=crop',
-                    episodeNumber: 25,
-                    scheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-                    scheduledTime: '5:00 PM IST',
-                    youtubeUrl: 'https://youtube.com/@businesstalkwithdeepakbhatt',
-                    tags: ['Strategy', 'Innovation', 'Digital'],
+                    guestInstitution: 'INSEAD',
+                    guestImage: '',
+                    thumbnailImage: '',
+                    episodeNumber: 308,
+                    scheduledDate: new Date('2024-12-11'),
+                    scheduledTime: '10:00 AM EST',
+                    youtubeUrl: 'https://www.youtube.com/watch?v=Qb0QfdAj1B0',
+                    tags: ['education', 'case method', 'teaching'],
                 },
                 {
-                    title: 'The Future of Leadership',
-                    description: 'Exploring modern leadership styles and what it takes to lead effectively in today\'s complex business environment.',
-                    category: 'upcoming',
-                    guestName: 'Prof. James Chen',
-                    guestTitle: 'Dean of Business',
-                    guestInstitution: 'Stanford Graduate School',
-                    guestImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400',
-                    thumbnailImage: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1280&h=720&fit=crop',
-                    episodeNumber: 26,
-                    scheduledDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-                    scheduledTime: '6:00 PM IST',
-                    youtubeUrl: 'https://youtube.com/@businesstalkwithdeepakbhatt',
-                    tags: ['Leadership', 'Management', 'Future'],
-                },
-                {
-                    title: 'Entrepreneurship in Emerging Markets',
-                    description: 'A discussion on the unique challenges and opportunities for entrepreneurs in developing economies.',
+                    title: 'Building Resilient Supply Chains Post-Pandemic',
+                    description: 'Strategies for creating supply chains that can withstand global disruptions.',
                     category: 'past',
-                    guestName: 'Dr. Priya Sharma',
-                    guestTitle: 'Director of Entrepreneurship',
-                    guestInstitution: 'IIM Ahmedabad',
-                    guestImage: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400',
-                    thumbnailImage: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=1280&h=720&fit=crop',
-                    episodeNumber: 24,
-                    scheduledDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-                    scheduledTime: '5:00 PM IST',
-                    youtubeUrl: 'https://youtube.com/@businesstalkwithdeepakbhatt',
-                    tags: ['Entrepreneurship', 'Emerging Markets', 'Startups'],
-                },
-                {
-                    title: 'Digital Marketing Strategies for 2025',
-                    description: 'Expert insights on cutting-edge digital marketing techniques and trends shaping the industry.',
-                    category: 'past',
-                    guestName: 'Maria Rodriguez',
-                    guestTitle: 'CMO',
-                    guestInstitution: 'TechGlobal Inc.',
-                    guestImage: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=400',
-                    thumbnailImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1280&h=720&fit=crop',
-                    episodeNumber: 23,
-                    scheduledDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-                    scheduledTime: '5:00 PM IST',
-                    youtubeUrl: 'https://youtube.com/@businesstalkwithdeepakbhatt',
-                    tags: ['Marketing', 'Digital', 'Strategy'],
-                },
-                {
-                    title: 'Sustainable Business Practices',
-                    description: 'How companies can integrate sustainability into their core business strategy for long-term success.',
-                    category: 'past',
-                    guestName: 'Dr. Michael Green',
-                    guestTitle: 'Professor of Sustainability',
-                    guestInstitution: 'MIT Sloan',
-                    guestImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-                    thumbnailImage: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=1280&h=720&fit=crop',
-                    episodeNumber: 22,
-                    scheduledDate: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000),
-                    scheduledTime: '5:00 PM IST',
-                    youtubeUrl: 'https://youtube.com/@businesstalkwithdeepakbhatt',
-                    tags: ['Sustainability', 'ESG', 'Business'],
+                    guestName: 'Dr. Lisa Chen',
+                    guestTitle: 'Professor of Operations Management',
+                    guestInstitution: 'MIT Sloan School of Management',
+                    guestImage: '',
+                    thumbnailImage: '',
+                    episodeNumber: 307,
+                    scheduledDate: new Date('2024-12-04'),
+                    scheduledTime: '10:00 AM EST',
+                    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                    tags: ['supply chain', 'operations', 'strategy'],
                 },
             ];
 
             await Podcast.insertMany(samplePodcasts);
-            console.log('✅ Sample podcasts seeded successfully');
+            console.log('✅ Sample podcasts seeded with local images');
         } else {
-            console.log(`📊 ${count} podcasts found in database`);
+            console.log(`📊 ${currentCount} podcasts found in database`);
         }
     } catch (error: any) {
         console.warn('⚠️ Could not seed sample data:', error.message);

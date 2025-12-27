@@ -260,41 +260,64 @@ export default function PodcastForm() {
                         <div className="border-t pt-6">
                             <h2 className="text-lg font-semibold text-gray-900 mb-4">Episode Thumbnail</h2>
                             <p className="text-sm text-gray-500 mb-4">
-                                Upload a custom thumbnail for this episode. If not provided, YouTube thumbnail will be used for past episodes.
+                                Upload a custom thumbnail OR paste an image URL. For past episodes, YouTube thumbnail will be used automatically if no image is provided.
                             </p>
-                            <div className="flex items-start space-x-4">
-                                {thumbnailPreview && (
-                                    <div className="relative w-48 h-28">
-                                        <img
-                                            src={thumbnailPreview}
-                                            alt="Episode Thumbnail"
-                                            className="w-full h-full object-cover rounded-lg shadow-md"
+                            <div className="space-y-4">
+                                <div className="flex items-start space-x-4">
+                                    {thumbnailPreview && (
+                                        <div className="relative w-48 h-28">
+                                            <img
+                                                src={thumbnailPreview}
+                                                alt="Episode Thumbnail"
+                                                className="w-full h-full object-cover rounded-lg shadow-md"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setThumbnailPreview(null);
+                                                    setValue('thumbnailImage', '');
+                                                }}
+                                                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-600"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <label className="cursor-pointer px-6 py-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-maroon-500 transition-colors bg-gray-50">
+                                        <div className="flex flex-col items-center space-y-2 text-gray-600">
+                                            <Upload className="w-6 h-6" />
+                                            <span className="text-sm font-medium">Upload Thumbnail</span>
+                                            <span className="text-xs text-gray-400">Recommended: 1280x720 (16:9)</span>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleThumbnailUpload}
+                                            className="hidden"
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setThumbnailPreview(null);
-                                                setValue('thumbnailImage', '');
-                                            }}
-                                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md hover:bg-red-600"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                )}
-                                <label className="cursor-pointer px-6 py-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-maroon-500 transition-colors bg-gray-50">
-                                    <div className="flex flex-col items-center space-y-2 text-gray-600">
-                                        <Upload className="w-6 h-6" />
-                                        <span className="text-sm font-medium">Upload Thumbnail</span>
-                                        <span className="text-xs text-gray-400">Recommended: 1280x720 (16:9)</span>
-                                    </div>
+                                    </label>
+                                </div>
+                                {/* URL Input for Thumbnail */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Or paste Image URL
+                                    </label>
                                     <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleThumbnailUpload}
-                                        className="hidden"
+                                        type="url"
+                                        placeholder="https://example.com/image.jpg"
+                                        className="input-field"
+                                        onChange={(e) => {
+                                            const url = e.target.value.trim();
+                                            if (url) {
+                                                setValue('thumbnailImage', url);
+                                                setThumbnailPreview(url);
+                                            }
+                                        }}
                                     />
-                                </label>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Tip: Use a direct image link (ending in .jpg, .png, etc.) from any public source
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -341,42 +364,59 @@ export default function PodcastForm() {
                                     />
                                 </div>
 
-                                <div>
+                                <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Guest Image
                                     </label>
-                                    <div className="flex items-center space-x-4">
-                                        {imagePreview && (
-                                            <div className="relative w-16 h-16">
-                                                <img
-                                                    src={imagePreview}
-                                                    alt="Guest"
-                                                    className="w-full h-full object-cover rounded-lg"
+                                    <div className="space-y-3">
+                                        <div className="flex items-center space-x-4">
+                                            {imagePreview && (
+                                                <div className="relative w-16 h-16">
+                                                    <img
+                                                        src={imagePreview}
+                                                        alt="Guest"
+                                                        className="w-full h-full object-cover rounded-lg"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setImagePreview(null);
+                                                            setValue('guestImage', '');
+                                                        }}
+                                                        className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <label className="cursor-pointer px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-maroon-500 transition-colors">
+                                                <div className="flex items-center space-x-2 text-gray-600">
+                                                    <Upload className="w-4 h-4" />
+                                                    <span className="text-sm">Upload Image</span>
+                                                </div>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleImageUpload}
+                                                    className="hidden"
                                                 />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setImagePreview(null);
-                                                        setValue('guestImage', '');
-                                                    }}
-                                                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        )}
-                                        <label className="cursor-pointer px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-maroon-500 transition-colors">
-                                            <div className="flex items-center space-x-2 text-gray-600">
-                                                <Upload className="w-4 h-4" />
-                                                <span className="text-sm">Upload Image</span>
-                                            </div>
+                                            </label>
+                                        </div>
+                                        {/* URL Input for Guest Image */}
+                                        <div>
                                             <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleImageUpload}
-                                                className="hidden"
+                                                type="url"
+                                                placeholder="Or paste image URL: https://example.com/guest.jpg"
+                                                className="input-field"
+                                                onChange={(e) => {
+                                                    const url = e.target.value.trim();
+                                                    if (url) {
+                                                        setValue('guestImage', url);
+                                                        setImagePreview(url);
+                                                    }
+                                                }}
                                             />
-                                        </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
