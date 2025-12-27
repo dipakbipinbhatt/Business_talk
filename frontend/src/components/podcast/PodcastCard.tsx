@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Youtube, User } from 'lucide-react';
 import { Podcast } from '../../services/api';
+import { getImageUrl, extractYoutubeId, getYoutubeThumbnail } from '../../utils/imageUrl';
 
 interface PodcastCardProps {
     podcast: Podcast;
@@ -14,33 +15,7 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
         day: 'numeric',
     }).toUpperCase();
 
-    const extractYoutubeId = (url?: string) => {
-        if (!url) return null;
-        const match = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([\w-]{11})/);
-        return match ? match[1] : null;
-    };
-
     const youtubeId = extractYoutubeId(podcast.youtubeUrl);
-
-    // Helper to get full image URL
-    const getImageUrl = (path: string | undefined): string | null => {
-        if (!path || path.trim() === '') return null;
-
-        // Already a full URL
-        if (path.startsWith('http://') || path.startsWith('https://')) {
-            return path;
-        }
-
-        // Local /uploads/ path - prepend backend URL
-        if (path.startsWith('/uploads/')) {
-            const apiUrl = import.meta.env.VITE_API_URL || '';
-            // Remove /api suffix if present to get base backend URL
-            const backendUrl = apiUrl.replace(/\/api$/, '');
-            return backendUrl ? `${backendUrl}${path}` : path;
-        }
-
-        return path;
-    };
 
     // Get thumbnail URL - simplified: use any available image
     const getThumbnailUrl = () => {
@@ -52,7 +27,7 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
         if (guestUrl) return guestUrl;
 
         if (youtubeId) {
-            return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+            return getYoutubeThumbnail(youtubeId);
         }
         return null;
     };
