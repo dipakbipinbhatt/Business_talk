@@ -334,8 +334,8 @@ export const deletePodcast = async (req: AuthRequest, res: Response): Promise<vo
     }
 };
 
-// Upload image - converts to Base64 data URL for direct MongoDB storage
-// No external services needed - image is embedded in the database
+// Upload image - compresses and converts to Base64 for MongoDB storage
+// Uses sharp to resize/compress images to keep them small
 export const uploadImage = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         if (!req.file) {
@@ -343,17 +343,23 @@ export const uploadImage = async (req: AuthRequest, res: Response): Promise<void
             return;
         }
 
-        // Read file and convert to Base64 data URL
         const fs = await import('fs');
-        const fileBuffer = fs.readFileSync(req.file.path);
-        const base64 = fileBuffer.toString('base64');
-        const mimeType = req.file.mimetype;
-        const imageUrl = `data:${mimeType};base64,${base64}`;
+        const sharp = (await import('sharp')).default;
 
-        // Delete the temporary local file
+        // Read and compress the image
+        const compressedBuffer = await sharp(req.file.path)
+            .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 75 })
+            .toBuffer();
+
+        // Convert to Base64
+        const base64 = compressedBuffer.toString('base64');
+        const imageUrl = `data:image/jpeg;base64,${base64}`;
+
+        // Delete temp file
         fs.unlinkSync(req.file.path);
 
-        console.log(`✅ Image converted to Base64 (${Math.round(base64.length / 1024)}KB)`);
+        console.log(`✅ Image compressed and converted to Base64 (${Math.round(base64.length / 1024)}KB)`);
 
         res.json({
             message: 'Image uploaded successfully',
