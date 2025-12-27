@@ -334,7 +334,8 @@ export const deletePodcast = async (req: AuthRequest, res: Response): Promise<vo
     }
 };
 
-// Upload image - uses Cloudinary if configured, local storage as fallback
+// Upload image - converts to Base64 data URL for direct MongoDB storage
+// No external services needed - image is embedded in the database
 export const uploadImage = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         if (!req.file) {
@@ -342,30 +343,17 @@ export const uploadImage = async (req: AuthRequest, res: Response): Promise<void
             return;
         }
 
-        let imageUrl: string;
+        // Read file and convert to Base64 data URL
+        const fs = await import('fs');
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const base64 = fileBuffer.toString('base64');
+        const mimeType = req.file.mimetype;
+        const imageUrl = `data:${mimeType};base64,${base64}`;
 
-        // Try Cloudinary first if configured
-        const { isCloudinaryConfigured, uploadBufferToCloudinary } = await import('../config/cloudinary');
+        // Delete the temporary local file
+        fs.unlinkSync(req.file.path);
 
-        if (isCloudinaryConfigured()) {
-            try {
-                // Read the file and upload to Cloudinary
-                const fs = await import('fs');
-                const fileBuffer = fs.readFileSync(req.file.path);
-                imageUrl = await uploadBufferToCloudinary(fileBuffer, req.file.filename);
-
-                // Delete the local file after uploading to Cloudinary
-                fs.unlinkSync(req.file.path);
-                console.log('✅ Image uploaded to Cloudinary:', imageUrl);
-            } catch (cloudinaryError) {
-                console.warn('⚠️ Cloudinary upload failed, using local storage:', cloudinaryError);
-                imageUrl = `/uploads/${req.file.filename}`;
-            }
-        } else {
-            // Use local storage (won't persist on Render free tier)
-            imageUrl = `/uploads/${req.file.filename}`;
-            console.log('ℹ️ Using local storage for image (Cloudinary not configured)');
-        }
+        console.log(`✅ Image converted to Base64 (${Math.round(base64.length / 1024)}KB)`);
 
         res.json({
             message: 'Image uploaded successfully',
