@@ -9,6 +9,7 @@ import { connectDB } from './config/db';
 import authRoutes from './routes/auth.routes';
 import podcastRoutes from './routes/podcast.routes';
 import blogRoutes from './routes/blog.routes';
+import categoryRoutes from './routes/category.routes';
 
 const app = express();
 
@@ -222,6 +223,7 @@ app.get('/api/admin/seed', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/podcasts', podcastRoutes);
 app.use('/api/blogs', blogRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // 404 handler
 app.use((_req, res) => {

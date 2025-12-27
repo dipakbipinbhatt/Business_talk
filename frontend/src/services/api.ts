@@ -206,4 +206,17 @@ export interface AuthResponse {
     refreshToken: string;
 }
 
+export interface Category {
+    _id: string;
+    name: string;
+    slug: string;
+}
+
+// Category API
+export const categoryAPI = {
+    getAll: () => api.get<Category[]>('/categories'),
+    create: (name: string) => api.post<{ category: Category }>('/categories', { name }),
+    delete: (id: string) => api.delete(`/categories/${id}`),
+};
+
 export default api;

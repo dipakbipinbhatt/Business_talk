@@ -10,11 +10,10 @@ import {
     Tag,
     Eye,
     EyeOff,
+    Plus,
 } from 'lucide-react';
-import { blogAPI, BlogInput } from '../../services/api';
+import { blogAPI, BlogInput, categoryAPI, Category } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
-
-const categories = ['Education', 'Leadership', 'Technology', 'Psychology', 'Sustainability', 'Marketing', 'Business', 'Innovation'];
 
 export default function BlogForm() {
     const navigate = useNavigate();
@@ -27,17 +26,50 @@ export default function BlogForm() {
         excerpt: '',
         content: '',
         author: 'Deepak Bhatt',
-        category: 'Business',
+        category: '',
         image: '',
         readTime: '5 min read',
         tags: [],
         isPublished: false,
     });
 
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [newCategory, setNewCategory] = useState('');
+    const [showAddCategory, setShowAddCategory] = useState(false);
     const [tagInput, setTagInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Fetch categories on mount
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    const fetchCategories = async () => {
+        try {
+            const response = await categoryAPI.getAll();
+            setCategories(response.data);
+            if (response.data.length > 0 && !formData.category) {
+                setFormData(prev => ({ ...prev, category: response.data[0].name }));
+            }
+        } catch (err) {
+            console.error('Error fetching categories:', err);
+        }
+    };
+
+    const handleAddCategory = async () => {
+        if (!newCategory.trim()) return;
+        try {
+            await categoryAPI.create(newCategory.trim());
+            await fetchCategories();
+            setFormData(prev => ({ ...prev, category: newCategory.trim() }));
+            setNewCategory('');
+            setShowAddCategory(false);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to add category');
+        }
+    };
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -216,19 +248,48 @@ export default function BlogForm() {
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Category *
                             </label>
-                            <select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
-                            >
-                                {categories.map((cat) => (
-                                    <option key={cat} value={cat}>
-                                        {cat}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="flex gap-2">
+                                <select
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={handleChange}
+                                    required
+                                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
+                                >
+                                    {categories.map((cat) => (
+                                        <option key={cat._id} value={cat.name}>
+                                            {cat.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddCategory(!showAddCategory)}
+                                    className="px-3 py-2 bg-maroon-100 text-maroon-700 rounded-lg hover:bg-maroon-200 transition-colors"
+                                    title="Add new category"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                </button>
+                            </div>
+                            {showAddCategory && (
+                                <div className="mt-2 flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newCategory}
+                                        onChange={(e) => setNewCategory(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
+                                        placeholder="New category name"
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleAddCategory}
+                                        className="px-3 py-2 bg-maroon-600 text-white rounded-lg text-sm hover:bg-maroon-700"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
