@@ -135,7 +135,7 @@ export default function Home() {
                                 {/* Display 2 cards per row */}
                                 <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
                                     {allUpcoming.map((podcast: Podcast) => (
-                                        <PodcastCard key={podcast._id} podcast={podcast} variant="featured" />
+                                        <PodcastCard key={podcast._id} podcast={podcast} variant="grid" />
                                     ))}
                                 </div>
                             </>
@@ -194,7 +194,7 @@ export default function Home() {
             </section>
 
             {/* Stay Updated Section */}
-            <section className="py-16 bg-gray-900 text-white">
+            <section className="py-16 bg-maroon-700 text-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -205,7 +205,7 @@ export default function Home() {
                         <h2 className="text-3xl md:text-4xl font-bold mb-4">
                             Stay Updated with Our Latest Episodes
                         </h2>
-                        <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
+                        <p className="text-gray-200 text-lg mb-8 max-w-2xl mx-auto">
                             Subscribe to Business Talk on your favorite podcast platform and never miss an episode.
                         </p>
                         <div className="flex flex-wrap justify-center gap-5">
@@ -213,6 +213,8 @@ export default function Home() {
                             <PlatformButton platform="apple" url={PLATFORM_URLS.applePodcasts} label="Apple Podcasts" />
                             <PlatformButton platform="spotify" url={PLATFORM_URLS.spotify} label="Spotify" />
                             <PlatformButton platform="amazon" url={PLATFORM_URLS.amazonMusic} label="Amazon Music" />
+                            <PlatformButton platform="audible" url={PLATFORM_URLS.audible} label="Audible" />
+                            <PlatformButton platform="soundcloud" url={PLATFORM_URLS.soundcloud} label="SoundCloud" />
                         </div>
                     </motion.div>
                 </div>

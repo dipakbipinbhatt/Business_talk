@@ -29,7 +29,7 @@ export default function Footer() {
                                 Business Talk
                             </span>
                         </div>
-                        <p className="text-gray-400 max-w-md">
+                        <p className="text-gray-400 max-w-md text-justify leading-relaxed">
                             Your premier podcast for cutting-edge trends, groundbreaking research,
                             valuable insights from notable books, and engaging discussions from the
                             realms of business and academia.
