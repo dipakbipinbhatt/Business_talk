@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Youtube, User } from 'lucide-react';
 import { Podcast } from '../../services/api';
@@ -56,6 +57,9 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
 
     // Featured variant - compact horizontal card for upcoming episodes
     if (variant === 'featured') {
+        const [imageError, setImageError] = React.useState(false);
+        const showPlaceholder = !thumbnailUrl || imageError;
+
         return (
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -65,30 +69,40 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
             >
                 <div className="flex flex-col md:flex-row h-full">
                     {/* Thumbnail */}
-                    <div className="md:w-72 flex-shrink-0 relative bg-gray-100 overflow-hidden">
+                    <div className="md:w-72 flex-shrink-0 relative bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
                         <div className="aspect-video relative">
-                            {thumbnailUrl ? (
-                                <img
-                                    src={thumbnailUrl}
-                                    alt={podcast.guestName}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
-                                    onError={handleImageError}
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-maroon-100 to-maroon-200">
-                                    <div className="w-16 h-16 rounded-full bg-maroon-300 flex items-center justify-center">
-                                        <svg className="w-8 h-8 text-maroon-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
-                                            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                                            <line x1="12" y1="19" x2="12" y2="22" />
-                                        </svg>
+                            {showPlaceholder ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-maroon-50 via-maroon-100 to-maroon-200 p-6">
+                                    <div className="relative mb-3">
+                                        <div className="w-20 h-20 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                                            <svg className="w-10 h-10 text-maroon-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                                                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                                                <line x1="12" y1="19" x2="12" y2="22" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-sm font-bold text-maroon-700 mb-1">Business Talk Podcast</p>
+                                        <p className="text-xs text-maroon-600">Episode #{podcast.episodeNumber}</p>
                                     </div>
                                 </div>
+                            ) : (
+                                <>
+                                    <img
+                                        src={thumbnailUrl}
+                                        alt={podcast.guestName}
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                        onError={() => setImageError(true)}
+                                    />
+                                    {/* Gradient overlay for better text visibility */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                                </>
                             )}
                         </div>
                         {/* Episode Badge */}
-                        <div className="absolute top-2 left-2 px-2 py-1 bg-maroon-700 text-white text-xs font-bold rounded shadow-lg z-10">
+                        <div className="absolute top-2 left-2 px-3 py-1.5 bg-maroon-700 text-white text-xs font-bold rounded-md shadow-lg z-10">
                             EP #{podcast.episodeNumber}
                         </div>
                     </div>
