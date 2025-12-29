@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PodcastCard from '../components/podcast/PodcastCard';
-import { podcastAPI } from '../services/api';
+import { podcastAPI, Podcast } from '../services/api';
 import { usePodcastStore } from '../store/useStore';
 import logoImage from '../assets/logo.jpg';
 
@@ -39,8 +39,8 @@ export default function Home() {
         fetchPodcasts();
     }, [setPodcasts, setLoading]);
 
-    // Get top 4 upcoming (display 2 big images) and top 50 past podcasts
-    const top4Upcoming = upcomingPodcasts.slice(0, 4);
+    // Get all upcoming podcasts and top 50 past podcasts
+    const allUpcoming = upcomingPodcasts;
     const top50Past = pastPodcasts.slice(0, 50);
 
     return (
@@ -170,19 +170,14 @@ export default function Home() {
                             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
                                 Upcoming Podcast Episodes
                             </h2>
-                            {upcomingPodcasts.length > 4 && (
-                                <Link
-                                    to="/podcasts"
-                                    className="hidden md:flex items-center text-maroon-700 hover:text-maroon-800 font-medium transition-colors"
-                                >
-                                    View All <ArrowRight className="w-4 h-4 ml-1" />
-                                </Link>
-                            )}
+                            <span className="px-4 py-2 bg-green-100 text-green-700 font-semibold rounded-full text-sm">
+                                {upcomingPodcasts.length} Scheduled
+                            </span>
                         </div>
 
                         {isLoading ? (
-                            <div className="grid md:grid-cols-2 gap-8">
-                                {[1, 2].map((i) => (
+                            <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
+                                {[1, 2, 3, 4, 5, 6].map((i) => (
                                     <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse"></div>
                                 ))}
                             </div>
@@ -190,46 +185,76 @@ export default function Home() {
                             <div className="text-center py-12">
                                 <p className="text-red-600">{error}</p>
                             </div>
-                        ) : top4Upcoming.length === 0 ? (
+                        ) : allUpcoming.length === 0 ? (
                             <div className="text-center py-12">
                                 <p className="text-gray-500">No upcoming podcasts scheduled. Check back soon!</p>
                             </div>
                         ) : (
                             <>
-                                {/* Display 2 large images per row */}
-                                <div className="grid md:grid-cols-2 gap-8">
-                                    {top4Upcoming.map((podcast) => (
-                                        <motion.div
-                                            key={podcast._id}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            whileInView={{ opacity: 1, y: 0 }}
-                                            viewport={{ once: true }}
-                                            className="relative group cursor-pointer overflow-hidden rounded-2xl shadow-lg"
-                                        >
-                                            <img
-                                                src={podcast.guestImage || podcast.thumbnailImage}
-                                                alt={podcast.guestName}
-                                                className="w-full h-80 object-cover group-hover:scale-105 transition-transform duration-300"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                                            <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                                                <p className="text-sm text-gray-300 mb-2">{new Date(podcast.scheduledDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                                <h3 className="text-xl font-bold mb-1">{podcast.guestName}</h3>
-                                                <p className="text-gray-300 text-sm">{podcast.guestTitle}</p>
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                {/* Display 2 cards per row */}
+                                <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
+                                    {allUpcoming.map((podcast: Podcast) => {
+                                        // Check if image is valid - prioritize thumbnailImage for upcoming podcasts
+                                        const hasThumbnail = podcast.thumbnailImage &&
+                                            (podcast.thumbnailImage.startsWith('http') || podcast.thumbnailImage.startsWith('data:'));
+                                        const hasValidImage = podcast.guestImage &&
+                                            (podcast.guestImage.startsWith('http') || podcast.guestImage.startsWith('data:'));
+                                        const imageUrl = hasThumbnail ? podcast.thumbnailImage : (hasValidImage ? podcast.guestImage : null);
+
+                                        return (
+                                            <motion.div
+                                                key={podcast._id}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                whileInView={{ opacity: 1, y: 0 }}
+                                                viewport={{ once: true }}
+                                                className="relative group cursor-pointer overflow-hidden rounded-2xl shadow-lg bg-gradient-to-br from-maroon-800 to-maroon-900"
+                                            >
+                                                {imageUrl ? (
+                                                    <img
+                                                        src={imageUrl}
+                                                        alt={podcast.guestName}
+                                                        className="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-300"
+                                                        onError={(e) => {
+                                                            // On error, hide the image and show fallback
+                                                            (e.target as HTMLImageElement).style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-72 flex items-center justify-center bg-gradient-to-br from-maroon-700 to-maroon-900">
+                                                        <div className="text-center text-white">
+                                                            <div className="w-20 h-20 mx-auto bg-white/20 rounded-full flex items-center justify-center mb-3">
+                                                                <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                                                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                                                                    <line x1="12" y1="19" x2="12" y2="22" />
+                                                                </svg>
+                                                            </div>
+                                                            <p className="text-lg font-semibold">Coming Soon</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                                                <div className="absolute top-3 left-3 px-3 py-1 bg-green-600 text-white text-xs font-bold rounded">
+                                                    UPCOMING
+                                                </div>
+                                                <div className="absolute top-3 right-3 px-3 py-1 bg-gray-900/80 text-white text-xs font-bold rounded">
+                                                    EP #{podcast.episodeNumber}
+                                                </div>
+                                                <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+                                                    <p className="text-sm text-green-400 mb-2 font-medium">
+                                                        {new Date(podcast.scheduledDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                                        {podcast.scheduledTime && ` • ${podcast.scheduledTime}`}
+                                                    </p>
+                                                    <h3 className="text-lg font-bold mb-1 line-clamp-1">{podcast.guestName}</h3>
+                                                    <p className="text-gray-300 text-sm line-clamp-1">{podcast.guestTitle}</p>
+                                                    {podcast.guestInstitution && (
+                                                        <p className="text-gray-400 text-xs mt-1 line-clamp-1">{podcast.guestInstitution}</p>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
                                 </div>
-                                {upcomingPodcasts.length > 4 && (
-                                    <div className="text-center mt-8 md:hidden">
-                                        <Link
-                                            to="/podcasts"
-                                            className="inline-flex items-center px-6 py-3 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors"
-                                        >
-                                            View All Upcoming <ArrowRight className="w-4 h-4 ml-2" />
-                                        </Link>
-                                    </div>
-                                )}
                             </>
                         )}
                     </motion.div>
@@ -263,7 +288,7 @@ export default function Home() {
                         </p>
 
                         {isLoading ? (
-                            <div className="grid md:grid-cols-3 gap-8">
+                            <div className="grid md:grid-cols-2 gap-8">
                                 {[1, 2, 3, 4, 5, 6].map((i) => (
                                     <div key={i} className="bg-gray-200 rounded-xl h-80 animate-pulse"></div>
                                 ))}
@@ -278,8 +303,8 @@ export default function Home() {
                             </div>
                         ) : (
                             <>
-                                {/* 3 per row grid */}
-                                <div className="grid md:grid-cols-3 gap-8">
+                                {/* 2 per row grid */}
+                                <div className="grid md:grid-cols-2 gap-8">
                                     {top50Past.map((podcast, index) => (
                                         <motion.div
                                             key={podcast._id}
