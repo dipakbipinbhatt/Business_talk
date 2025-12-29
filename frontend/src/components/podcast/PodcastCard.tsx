@@ -61,11 +61,11 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                className="bg-white border border-gray-200 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all"
             >
-                <div className="flex flex-col md:flex-row">
+                <div className="flex flex-col md:flex-row h-full">
                     {/* Thumbnail */}
-                    <div className="md:w-64 flex-shrink-0 relative bg-gray-100 overflow-hidden">
+                    <div className="md:w-72 flex-shrink-0 relative bg-gray-100 overflow-hidden">
                         <div className="aspect-video relative">
                             {thumbnailUrl ? (
                                 <img
@@ -94,21 +94,21 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 p-4">
+                    <div className="flex-1 p-5">
                         <div className="flex flex-col h-full justify-between">
                             {/* Top: Category & Title */}
-                            <div>
+                            <div className="mb-4">
                                 <span className="text-xs font-semibold text-maroon-600 uppercase tracking-wide">
                                     Upcoming Episode
                                 </span>
-                                <h3 className="text-base font-bold text-gray-900 mt-1 line-clamp-2 hover:text-maroon-700 transition-colors">
+                                <h3 className="text-base font-bold text-gray-900 mt-2 line-clamp-2 hover:text-maroon-700 transition-colors leading-snug">
                                     {podcast.title}
                                 </h3>
                             </div>
 
                     {/* Middle: Guest Info */}
-                    <div className="flex items-center space-x-3 my-3">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ring-2 ring-gray-300">
+                    <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-14 h-14 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ring-2 ring-maroon-200 shadow-md">
                             {guestAvatar ? (
                                 <img
                                     src={guestAvatar}
@@ -122,45 +122,45 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-400">
-                                    <User className="w-6 h-6 text-gray-500" />
+                                    <User className="w-7 h-7 text-gray-500" />
                                 </div>
                             )}
                         </div>
                         <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-gray-900 truncate">{podcast.guestName}</div>
-                            <div className="text-xs text-gray-600 truncate">{podcast.guestTitle}</div>
+                            <div className="text-sm font-bold text-gray-900 truncate">{podcast.guestName}</div>
+                            <div className="text-xs text-gray-600 truncate mt-0.5">{podcast.guestTitle}</div>
                             {podcast.guestInstitution && (
-                                <div className="text-xs text-gray-500 truncate">{podcast.guestInstitution}</div>
+                                <div className="text-xs text-gray-500 truncate mt-0.5">{podcast.guestInstitution}</div>
                             )}
                         </div>
                     </div>
 
                     {/* Bottom: Date, Time & Platform Icons */}
-                    <div className="flex items-center justify-between text-xs text-gray-600 pt-2 border-t border-gray-200">
-                        <div className="flex flex-col space-y-1">
-                            <span className="flex items-center font-medium">
-                                <Calendar className="w-3.5 h-3.5 mr-1.5 text-maroon-600" />
+                    <div className="flex items-center justify-between text-xs text-gray-600 pt-3 border-t border-gray-200">
+                        <div className="flex flex-col space-y-1.5">
+                            <span className="flex items-center font-semibold text-gray-700">
+                                <Calendar className="w-4 h-4 mr-1.5 text-maroon-600" />
                                 {formattedDate}
                             </span>
-                            <span className="flex items-center font-medium">
-                                <Clock className="w-3.5 h-3.5 mr-1.5 text-maroon-600" />
+                            <span className="flex items-center font-semibold text-gray-700">
+                                <Clock className="w-4 h-4 mr-1.5 text-maroon-600" />
                                 {podcast.scheduledTime}
                             </span>
                         </div>
                         {/* Platform icons */}
-                        <div className="flex flex-col space-y-1">
+                        <div className="flex flex-col space-y-1.5">
                             {podcast.youtubeUrl && (
-                                <a href={podcast.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1 px-2 py-1 rounded bg-red-600 hover:bg-red-700 transition-colors">
-                                    <Youtube className="w-3.5 h-3.5 text-white" />
-                                    <span className="text-white text-xs font-medium">YouTube</span>
+                                <a href={podcast.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 transition-colors shadow-sm">
+                                    <Youtube className="w-4 h-4 text-white" />
+                                    <span className="text-white text-xs font-semibold">YouTube</span>
                                 </a>
                             )}
                             {podcast.spotifyUrl && (
-                                <a href={podcast.spotifyUrl} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1 px-2 py-1 rounded bg-green-500 hover:bg-green-600 transition-colors">
-                                    <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                <a href={podcast.spotifyUrl} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-green-500 hover:bg-green-600 transition-colors shadow-sm">
+                                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.24 1.2zm.12-3.36C18.24 9.541 10.68 9.241 6.241 10.561c-.6.15-1.201-.181-1.381-.721-.18-.601.18-1.2.72-1.381 5.16-1.44 13.44-1.02 18.72 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
                                     </svg>
-                                    <span className="text-white text-xs font-medium">Spotify</span>
+                                    <span className="text-white text-xs font-semibold">Spotify</span>
                                 </a>
                             )}
                         </div>
