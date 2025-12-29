@@ -22,6 +22,7 @@ function App() {
                     <Route index element={<Home />} />
                     <Route path="about" element={<AboutUs />} />
                     <Route path="podcasts" element={<Podcasts />} />
+                    <Route path="calendar" element={<Calendar />} />
                     <Route path="blog" element={<Blog />} />
                     <Route path="blog/:id" element={<BlogPost />} />
                     <Route path="contact" element={<Contact />} />
@@ -30,7 +31,6 @@ function App() {
                     <Route index element={<AdminLogin />} />
                     <Route path="login" element={<AdminLogin />} />
                     <Route path="dashboard" element={<AdminDashboard />} />
-                    <Route path="calendar" element={<Calendar />} />
                     <Route path="podcast/new" element={<PodcastForm />} />
                     <Route path="podcast/edit/:id" element={<PodcastForm />} />
                     <Route path="blog/new" element={<BlogForm />} />
