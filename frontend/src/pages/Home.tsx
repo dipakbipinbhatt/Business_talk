@@ -155,7 +155,7 @@ export default function Home() {
                     >
                         <div className="flex justify-between items-center mb-8">
                             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-                                Previous Podcast Episodes
+                                Previous Episodes
                             </h2>
                             {pastPodcasts.length > 0 && (
                                 <Link
