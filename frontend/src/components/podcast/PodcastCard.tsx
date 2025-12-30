@@ -43,6 +43,9 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
     const thumbnailUrl = getThumbnailUrl();
     const guestAvatar = getGuestAvatar();
 
+    // State for image error handling (moved to top level to comply with Rules of Hooks)
+    const [imageError, setImageError] = React.useState(false);
+
     // Handle image error - try YouTube thumbnail, then logo
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
         const target = e.target as HTMLImageElement;
@@ -57,7 +60,6 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
 
     // Featured variant - compact horizontal card for upcoming episodes
     if (variant === 'featured') {
-        const [imageError, setImageError] = React.useState(false);
         const showPlaceholder = !thumbnailUrl || imageError;
 
         return (
