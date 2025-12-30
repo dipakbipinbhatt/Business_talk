@@ -144,13 +144,8 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* Divider Line */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <hr className="border-t-4 border-maroon-700" />
-            </div>
-
-            {/* Previous Podcasts Section - Different background */}
-            <section className="py-16 bg-gray-100">
+            {/* Previous Podcasts Section - Different background with shadow */}
+            <section className="py-16 bg-gray-100 shadow-inner">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
                         initial={{ opacity: 0 }}
