@@ -83,7 +83,6 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                 </div>
                                 <div className="text-center">
                                     <p className="text-sm font-bold text-maroon-700 mb-1">Business Talk Podcast</p>
-                                    <p className="text-xs text-maroon-600">Episode #{podcast.episodeNumber}</p>
                                 </div>
                             </div>
                         ) : (
@@ -95,10 +94,6 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                 onError={() => setImageError(true)}
                             />
                         )}
-                        {/* Episode Badge */}
-                        <div className="absolute top-2 left-2 px-3 py-1.5 bg-maroon-700 text-white text-xs font-bold rounded-md shadow-lg z-10">
-                            EP #{podcast.episodeNumber}
-                        </div>
                     </div>
 
                     {/* Content */}
@@ -114,65 +109,65 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                 </h3>
                             </div>
 
-                    {/* Middle: Guest Info */}
-                    <div className="flex items-center space-x-3 mb-4">
-                        <div className="w-14 h-14 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ring-2 ring-maroon-200 shadow-md">
-                            {guestAvatar ? (
-                                <img
-                                    src={guestAvatar}
-                                    alt={podcast.guestName}
-                                    className="w-full h-full object-cover"
-                                    loading="lazy"
-                                    onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.style.display = 'none';
-                                    }}
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-400">
-                                    <User className="w-7 h-7 text-gray-500" />
+                            {/* Middle: Guest Info */}
+                            <div className="flex items-center space-x-3 mb-4">
+                                <div className="w-14 h-14 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ring-2 ring-maroon-200 shadow-md">
+                                    {guestAvatar ? (
+                                        <img
+                                            src={guestAvatar}
+                                            alt={podcast.guestName}
+                                            className="w-full h-full object-cover"
+                                            loading="lazy"
+                                            onError={(e) => {
+                                                const target = e.target as HTMLImageElement;
+                                                target.style.display = 'none';
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-400">
+                                            <User className="w-7 h-7 text-gray-500" />
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <div className="text-sm font-bold text-gray-900 truncate">{podcast.guestName}</div>
-                            <div className="text-xs text-gray-600 truncate mt-0.5">{podcast.guestTitle}</div>
-                            {podcast.guestInstitution && (
-                                <div className="text-xs text-gray-500 truncate mt-0.5">{podcast.guestInstitution}</div>
-                            )}
-                        </div>
-                    </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-sm font-bold text-gray-900 truncate">{podcast.guestName}</div>
+                                    <div className="text-xs text-gray-600 truncate mt-0.5">{podcast.guestTitle}</div>
+                                    {podcast.guestInstitution && (
+                                        <div className="text-xs text-gray-500 truncate mt-0.5">{podcast.guestInstitution}</div>
+                                    )}
+                                </div>
+                            </div>
 
-                    {/* Bottom: Date, Time & Platform Icons */}
-                    <div className="flex items-center justify-between text-xs text-gray-600 pt-3 border-t border-gray-200">
-                        <div className="flex flex-col space-y-1.5">
-                            <span className="flex items-center font-semibold text-gray-700">
-                                <Calendar className="w-4 h-4 mr-1.5 text-maroon-600" />
-                                {formattedDate}
-                            </span>
-                            <span className="flex items-center font-semibold text-gray-700">
-                                <Clock className="w-4 h-4 mr-1.5 text-maroon-600" />
-                                {podcast.scheduledTime}
-                            </span>
-                        </div>
-                        {/* Platform icons */}
-                        <div className="flex flex-col space-y-1.5">
-                            {podcast.youtubeUrl && (
-                                <a href={podcast.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 transition-colors shadow-sm">
-                                    <Youtube className="w-4 h-4 text-white" />
-                                    <span className="text-white text-xs font-semibold">YouTube</span>
-                                </a>
-                            )}
-                            {podcast.spotifyUrl && (
-                                <a href={podcast.spotifyUrl} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-green-500 hover:bg-green-600 transition-colors shadow-sm">
-                                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.24 1.2zm.12-3.36C18.24 9.541 10.68 9.241 6.241 10.561c-.6.15-1.201-.181-1.381-.721-.18-.601.18-1.2.72-1.381 5.16-1.44 13.44-1.02 18.72 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-                                    </svg>
-                                    <span className="text-white text-xs font-semibold">Spotify</span>
-                                </a>
-                            )}
-                        </div>
-                    </div>
+                            {/* Bottom: Date, Time & Platform Icons */}
+                            <div className="flex items-center justify-between text-xs text-gray-600 pt-3 border-t border-gray-200">
+                                <div className="flex flex-col space-y-1.5">
+                                    <span className="flex items-center font-semibold text-gray-700">
+                                        <Calendar className="w-4 h-4 mr-1.5 text-maroon-600" />
+                                        {formattedDate}
+                                    </span>
+                                    <span className="flex items-center font-semibold text-gray-700">
+                                        <Clock className="w-4 h-4 mr-1.5 text-maroon-600" />
+                                        {podcast.scheduledTime}
+                                    </span>
+                                </div>
+                                {/* Platform icons */}
+                                <div className="flex flex-col space-y-1.5">
+                                    {podcast.youtubeUrl && (
+                                        <a href={podcast.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 transition-colors shadow-sm">
+                                            <Youtube className="w-4 h-4 text-white" />
+                                            <span className="text-white text-xs font-semibold">YouTube</span>
+                                        </a>
+                                    )}
+                                    {podcast.spotifyUrl && (
+                                        <a href={podcast.spotifyUrl} target="_blank" rel="noopener noreferrer" className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-green-500 hover:bg-green-600 transition-colors shadow-sm">
+                                            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.24 1.2zm.12-3.36C18.24 9.541 10.68 9.241 6.241 10.561c-.6.15-1.201-.181-1.381-.721-.18-.601.18-1.2.72-1.381 5.16-1.44 13.44-1.02 18.72 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+                                            </svg>
+                                            <span className="text-white text-xs font-semibold">Spotify</span>
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -228,10 +223,6 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                         </div>
                     </div>
                 )}
-                {/* Episode Badge */}
-                <div className="absolute top-3 left-3 px-3 py-1.5 bg-gray-900 text-white text-xs font-black rounded shadow-lg z-20">
-                    EP #{podcast.episodeNumber}
-                </div>
             </div>
 
             {/* Content */}
@@ -304,14 +295,14 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                         {podcast.applePodcastUrl && (
                             <a href={podcast.applePodcastUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center hover:bg-purple-700 transition-colors shadow-sm" title="Listen on Apple Podcasts">
                                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.182c5.423 0 9.818 4.395 9.818 9.818 0 5.423-4.395 9.818-9.818 9.818-5.423 0-9.818-4.395-9.818-9.818 0-5.423 4.395-9.818 9.818-9.818zM12 5.455c-1.8 0-3.273 1.472-3.273 3.272S10.2 12 12 12s3.273-1.473 3.273-3.273S13.8 5.455 12 5.455zm0 7.636c-.9 0-1.636.737-1.636 1.637v3.817c0 .9.736 1.637 1.636 1.637s1.636-.737 1.636-1.637v-3.817c0-.9-.736-1.637-1.636-1.637z"/>
+                                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2.182c5.423 0 9.818 4.395 9.818 9.818 0 5.423-4.395 9.818-9.818 9.818-5.423 0-9.818-4.395-9.818-9.818 0-5.423 4.395-9.818 9.818-9.818zM12 5.455c-1.8 0-3.273 1.472-3.273 3.272S10.2 12 12 12s3.273-1.473 3.273-3.273S13.8 5.455 12 5.455zm0 7.636c-.9 0-1.636.737-1.636 1.637v3.817c0 .9.736 1.637 1.636 1.637s1.636-.737 1.636-1.637v-3.817c0-.9-.736-1.637-1.636-1.637z" />
                                 </svg>
                             </a>
                         )}
                         {podcast.amazonMusicUrl && (
                             <a href={podcast.amazonMusicUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors shadow-sm" title="Listen on Amazon Music">
                                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M2.2 17.328c-.037-.039-.076-.076-.076-.152 0-.076.039-.114.153-.114.19 0 .419.076.609.076.532 0 .799-.19.799-.685v-6.08c0-.533-.114-.761-.646-.875-.076-.02-.152-.039-.152-.133 0-.076.038-.114.114-.133.761-.133 1.294-.305 1.827-.495.076-.02.133-.02.171.038.038.076.02.133.02.21v7.582c0 .495.267.685.8.685.189 0 .418-.076.608-.076.114 0 .152.038.152.114 0 .076-.038.113-.114.152-.494.267-.988.456-1.521.456-.533 0-.951-.152-1.218-.456-.762.304-1.333.456-1.903.456-.57-.001-1.065-.19-1.598-.57zm18.933-.228c-.038.038-.076.076-.152.076-.076 0-.114-.038-.152-.114-.343-.495-.647-.913-1.065-1.331-.609.762-1.104 1.332-1.979 1.332-.913 0-1.445-.647-1.445-1.522 0-.875.456-1.446 1.141-1.979.647-.494 1.408-.837 2.169-1.179v-.951c0-1.141-.228-2.017-1.256-2.017-.456 0-.837.152-1.103.457-.267.304-.381.647-.381 1.103 0 .152.076.266.076.418 0 .342-.228.532-.532.532-.305 0-.533-.228-.533-.532 0-.456.267-.913.685-1.255.457-.381 1.104-.609 1.789-.609 1.293 0 2.206.609 2.206 2.017v3.158c0 .609.152.951.571 1.446.076.038.076.114.076.19-.001.113-.039.151-.115.227zm-2.168-3.576c-.723.342-1.484.685-1.979 1.179-.304.266-.495.608-.495 1.065 0 .608.304.989.837.989.608 0 1.027-.419 1.407-.914.113-.152.228-.342.228-.533l.002-1.786zM8.053 13.143c0 1.598.647 2.893 2.092 2.893.647 0 1.179-.228 1.598-.685.495-.495.685-1.141.761-1.789.02-.114.076-.19.19-.19h.381c.114 0 .19.076.19.19v2.739c0 .114-.076.152-.152.152h-.38c-.114 0-.19-.076-.19-.19v-.495c-.571.533-1.218.876-2.017.876-1.864 0-2.968-1.484-2.968-3.615 0-2.13 1.179-3.576 3.044-3.576.837 0 1.522.304 2.093.951.114.152.076.228-.038.342l-.19.19c-.076.076-.152.076-.228 0-.456-.494-.951-.761-1.522-.761-1.218.001-2.664.875-2.664 2.968zm13.055-8.77c0 .99-.803 1.793-1.793 1.793s-1.793-.803-1.793-1.793.803-1.793 1.793-1.793 1.793.803 1.793 1.793z"/>
+                                    <path d="M2.2 17.328c-.037-.039-.076-.076-.076-.152 0-.076.039-.114.153-.114.19 0 .419.076.609.076.532 0 .799-.19.799-.685v-6.08c0-.533-.114-.761-.646-.875-.076-.02-.152-.039-.152-.133 0-.076.038-.114.114-.133.761-.133 1.294-.305 1.827-.495.076-.02.133-.02.171.038.038.076.02.133.02.21v7.582c0 .495.267.685.8.685.189 0 .418-.076.608-.076.114 0 .152.038.152.114 0 .076-.038.113-.114.152-.494.267-.988.456-1.521.456-.533 0-.951-.152-1.218-.456-.762.304-1.333.456-1.903.456-.57-.001-1.065-.19-1.598-.57zm18.933-.228c-.038.038-.076.076-.152.076-.076 0-.114-.038-.152-.114-.343-.495-.647-.913-1.065-1.331-.609.762-1.104 1.332-1.979 1.332-.913 0-1.445-.647-1.445-1.522 0-.875.456-1.446 1.141-1.979.647-.494 1.408-.837 2.169-1.179v-.951c0-1.141-.228-2.017-1.256-2.017-.456 0-.837.152-1.103.457-.267.304-.381.647-.381 1.103 0 .152.076.266.076.418 0 .342-.228.532-.532.532-.305 0-.533-.228-.533-.532 0-.456.267-.913.685-1.255.457-.381 1.104-.609 1.789-.609 1.293 0 2.206.609 2.206 2.017v3.158c0 .609.152.951.571 1.446.076.038.076.114.076.19-.001.113-.039.151-.115.227zm-2.168-3.576c-.723.342-1.484.685-1.979 1.179-.304.266-.495.608-.495 1.065 0 .608.304.989.837.989.608 0 1.027-.419 1.407-.914.113-.152.228-.342.228-.533l.002-1.786zM8.053 13.143c0 1.598.647 2.893 2.092 2.893.647 0 1.179-.228 1.598-.685.495-.495.685-1.141.761-1.789.02-.114.076-.19.19-.19h.381c.114 0 .19.076.19.19v2.739c0 .114-.076.152-.152.152h-.38c-.114 0-.19-.076-.19-.19v-.495c-.571.533-1.218.876-2.017.876-1.864 0-2.968-1.484-2.968-3.615 0-2.13 1.179-3.576 3.044-3.576.837 0 1.522.304 2.093.951.114.152.076.228-.038.342l-.19.19c-.076.076-.152.076-.228 0-.456-.494-.951-.761-1.522-.761-1.218.001-2.664.875-2.664 2.968zm13.055-8.77c0 .99-.803 1.793-1.793 1.793s-1.793-.803-1.793-1.793.803-1.793 1.793-1.793 1.793.803 1.793 1.793z" />
                                 </svg>
                             </a>
                         )}

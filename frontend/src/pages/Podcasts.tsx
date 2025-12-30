@@ -120,9 +120,6 @@ export default function Podcasts() {
                             </div>
                         </div>
                     )}
-                    <div className="absolute top-3 left-3 px-3 py-1 bg-gray-900 text-white text-xs font-bold rounded">
-                        EP #{podcast.episodeNumber}
-                    </div>
                 </div>
 
                 {/* Content */}
@@ -221,6 +218,110 @@ export default function Podcasts() {
                 </div>
             ) : (
                 <>
+                    {/* Upcoming Episodes Section */}
+                    {filteredUpcoming.length > 0 && (
+                        <section className="py-12 px-4 bg-white">
+                            <div className="max-w-7xl mx-auto">
+                                <div className="flex items-center justify-between mb-8">
+                                    <div>
+                                        <h2 className="text-3xl font-bold text-gray-900">
+                                            Upcoming <span className="text-maroon-700">Episodes</span>
+                                        </h2>
+                                        <p className="text-gray-600 mt-1">Don't miss our upcoming conversations</p>
+                                    </div>
+                                    <span className="px-4 py-2 bg-green-100 text-green-700 font-semibold rounded-full text-sm">
+                                        {filteredUpcoming.length} Scheduled
+                                    </span>
+                                </div>
+                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {filteredUpcoming.map((podcast, index) => {
+                                        const thumbnailUrl = getThumbnailUrl(podcast);
+                                        const formattedDate = new Date(podcast.scheduledDate).toLocaleDateString('en-US', {
+                                            weekday: 'long',
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                        });
+
+                                        return (
+                                            <motion.div
+                                                key={podcast._id}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ duration: 0.5, delay: index * 0.05 }}
+                                                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 group border-2 border-green-200"
+                                            >
+                                                {/* Thumbnail */}
+                                                <div className="relative aspect-video bg-gray-200">
+                                                    {thumbnailUrl ? (
+                                                        <img
+                                                            src={thumbnailUrl}
+                                                            alt={podcast.guestName}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = '/logo.jpg';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-100 to-green-200">
+                                                            <div className="text-center">
+                                                                <div className="w-16 h-16 mx-auto bg-green-300 rounded-full flex items-center justify-center mb-2">
+                                                                    <Calendar className="w-8 h-8 text-green-600" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute top-3 left-3 px-3 py-1 bg-green-600 text-white text-xs font-bold rounded">
+                                                        UPCOMING
+                                                    </div>
+                                                </div>
+
+                                                {/* Content */}
+                                                <div className="p-4">
+                                                    <div className="flex items-center text-xs text-green-600 font-semibold mb-2">
+                                                        <Calendar className="w-3 h-3 mr-1" />
+                                                        {formattedDate}
+                                                        {podcast.scheduledTime && (
+                                                            <span className="ml-2">• {podcast.scheduledTime}</span>
+                                                        )}
+                                                    </div>
+
+                                                    <h3 className="font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-maroon-700 transition-colors">
+                                                        {podcast.title}
+                                                    </h3>
+
+                                                    {/* Guest Info */}
+                                                    <div className="flex items-center space-x-2 mb-4">
+                                                        <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                                                            {podcast.guestImage && podcast.guestImage.startsWith('http') ? (
+                                                                <img src={podcast.guestImage} alt={podcast.guestName} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-400">
+                                                                    <User className="w-5 h-5 text-gray-500" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-sm font-semibold text-gray-900">{podcast.guestName}</div>
+                                                            <div className="text-xs text-gray-500 line-clamp-1">{podcast.guestTitle}</div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Institution */}
+                                                    {podcast.guestInstitution && (
+                                                        <div className="text-xs text-gray-500 mb-2">
+                                                            {podcast.guestInstitution}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </section>
+                    )}
+
                     {/* Past Episodes Section */}
                     {filteredPast.length > 0 && (
                         <section className="py-12 px-4 bg-gray-50">
