@@ -104,7 +104,7 @@ export default function Calendar() {
                         <CalendarIcon className="w-8 h-8 text-maroon-600" />
                         Podcast Calendar
                     </h1>
-                    <p className="text-gray-600 mt-2">View all upcoming and past podcast episodes by date</p>
+                    <p className="text-gray-600 mt-2">View all upcoming and previous podcast episodes by date</p>
                 </motion.div>
 
                 {/* Calendar Controls */}
@@ -162,8 +162,8 @@ export default function Calendar() {
                                     {day && (
                                         <>
                                             <span className={`inline-flex items-center justify-center w-7 h-7 text-sm ${isToday
-                                                    ? 'bg-maroon-600 text-white rounded-full font-bold'
-                                                    : 'text-gray-700'
+                                                ? 'bg-maroon-600 text-white rounded-full font-bold'
+                                                : 'text-gray-700'
                                                 }`}>
                                                 {day}
                                             </span>
@@ -176,8 +176,8 @@ export default function Calendar() {
                                                             key={podcast._id}
                                                             onClick={() => setSelectedPodcast(podcast)}
                                                             className={`w-full text-left px-2 py-1 rounded text-xs truncate ${isPast
-                                                                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                                    : 'bg-maroon-100 text-maroon-700 hover:bg-maroon-200'
+                                                                ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                                : 'bg-maroon-100 text-maroon-700 hover:bg-maroon-200'
                                                                 }`}
                                                         >
                                                             EP {podcast.episodeNumber}
@@ -226,8 +226,8 @@ export default function Calendar() {
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${new Date(selectedPodcast.scheduledDate) < today
-                                        ? 'bg-gray-100 text-gray-700'
-                                        : 'bg-maroon-100 text-maroon-700'
+                                    ? 'bg-gray-100 text-gray-700'
+                                    : 'bg-maroon-100 text-maroon-700'
                                     }`}>
                                     Episode {selectedPodcast.episodeNumber} - {
                                         new Date(selectedPodcast.scheduledDate) < today ? 'Past' : 'Upcoming'

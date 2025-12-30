@@ -215,7 +215,7 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
         );
     }
 
-    // Grid variant (for past podcasts)
+    // Grid variant (for previous podcasts)
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}

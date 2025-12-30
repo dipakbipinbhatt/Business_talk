@@ -67,7 +67,7 @@ export default function Podcasts() {
         return null;
     };
 
-    // Past Episode Card
+    // Previous Episode Card
     const PastCard = ({ podcast, index }: { podcast: Podcast; index: number }) => {
         const youtubeId = extractYoutubeId(podcast.youtubeUrl);
         const thumbnailUrl = getThumbnailUrl(podcast);
@@ -322,14 +322,14 @@ export default function Podcasts() {
                         </section>
                     )}
 
-                    {/* Past Episodes Section */}
+                    {/* Previous Episodes Section */}
                     {filteredPast.length > 0 && (
                         <section className="py-12 px-4 bg-gray-50">
                             <div className="max-w-7xl mx-auto">
                                 <div className="flex items-center justify-between mb-8">
                                     <div>
                                         <h2 className="text-3xl font-bold text-gray-900">
-                                            Past <span className="text-maroon-700">Episodes</span>
+                                            Previous <span className="text-maroon-700">Episodes</span>
                                         </h2>
                                         <p className="text-gray-600 mt-1">Watch our previous conversations</p>
                                     </div>

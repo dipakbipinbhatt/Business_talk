@@ -146,10 +146,10 @@ export default function Home() {
 
             {/* Divider Line */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <hr className="border-t-2 border-gray-300" />
+                <hr className="border-t-4 border-maroon-700" />
             </div>
 
-            {/* Past Podcasts Section - Different background */}
+            {/* Previous Podcasts Section - Different background */}
             <section className="py-16 bg-gray-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
@@ -160,7 +160,7 @@ export default function Home() {
                     >
                         <div className="flex justify-between items-center mb-8">
                             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-                                Past Podcast Episodes
+                                Previous Podcast Episodes
                             </h2>
                             {pastPodcasts.length > 0 && (
                                 <Link
@@ -185,7 +185,7 @@ export default function Home() {
                             </div>
                         ) : top50Past.length === 0 ? (
                             <div className="text-center py-12">
-                                <p className="text-gray-500">No past podcasts available yet.</p>
+                                <p className="text-gray-500">No previous podcasts available yet.</p>
                             </div>
                         ) : (
                             <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
