@@ -65,7 +65,7 @@ export default function Home() {
                         </div>
 
                         {/* Welcome text - dark black headers */}
-                        <p className="text-base text-gray-800 max-w-4xl mx-auto mb-6 leading-relaxed text-left md:text-justify">
+                        <p className="text-base text-gray-800 max-w-4xl mx-auto mb-6 leading-relaxed text-justify">
                             Welcome to Business Talk, your premier podcast for cutting-edge trends,
                             groundbreaking research, valuable insights from notable books, and engaging
                             discussions from the realms of business and academia. Whether you're an academic scholar, researcher,
@@ -74,12 +74,12 @@ export default function Home() {
                             sharing their unique perspectives and expertise.
                         </p>
 
-                        <p className="text-base text-gray-800 max-w-4xl mx-auto mb-6 leading-relaxed text-left md:text-justify">
+                        <p className="text-base text-gray-800 max-w-4xl mx-auto mb-6 leading-relaxed text-justify">
                             <strong className="text-gray-900">How do we select our speakers?:</strong> The Business Talk committee identifies speakers after a meticulous screening process. These
                             experts are then invited. That is, participation as a speaker is by invitation only. We remain committed to delivering free, high-quality content to our research community and are dedicated to maintaining this model in the future.
                         </p>
 
-                        <p className="text-base text-gray-800 max-w-4xl mx-auto mb-8 leading-relaxed text-left md:text-justify">
+                        <p className="text-base text-gray-800 max-w-4xl mx-auto mb-8 leading-relaxed text-justify">
                             Brought to you by <a href="https://www.globalmanagementconsultancy.com/" target="_blank" rel="noopener noreferrer" className="text-maroon-700 hover:underline font-medium">Global Management Consultancy</a>,
                             we are committed to driving innovation and excellence in the business community. The podcast recordings are available in both video and audio formats on this webpage.
                             Simply click on the respective channel icons and immerse yourself in the world of learning!
