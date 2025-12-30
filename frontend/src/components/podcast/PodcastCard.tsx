@@ -276,6 +276,20 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                     </svg>
                                 </a>
                             )}
+                            {podcast.audibleUrl && (
+                                <a href={podcast.audibleUrl} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-orange-500 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-md" title="Listen on Audible">
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm-1-11v6l5-3-5-3z" />
+                                    </svg>
+                                </a>
+                            )}
+                            {podcast.soundcloudUrl && (
+                                <a href={podcast.soundcloudUrl} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-orange-600 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-md" title="Listen on SoundCloud">
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M1 18.5v-5h1v5H1zm2.5-7v7h1v-7h-1zm2.5 2v5h1v-5H6zm2.5-4v9h1v-9h-1zm2.5 2v7h1v-7h-1zm2.5-4v11h1V7.5h-1zm2.5 2v9h1v-9h-1zm2.5-4v13h1V5.5h-1zM22 7c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2 1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z" />
+                                    </svg>
+                                </a>
+                            )}
                         </div>
                     </>
                 ) : (
