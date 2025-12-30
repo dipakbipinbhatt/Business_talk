@@ -66,10 +66,10 @@ export const PlatformButton = ({ platform, url, label, className = "" }: Platfor
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`flex items-center justify-center space-x-3 px-8 py-4 ${config.bg} text-white rounded-2xl ${config.hover} transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 min-w-[200px] ${className}`}
+            className={`flex items-center justify-center space-x-1.5 px-3 py-2 ${config.bg} text-white rounded-lg ${config.hover} transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 ${className}`}
         >
-            <Logo className="w-7 h-7 flex-shrink-0" />
-            <span className="font-bold text-lg">{label}</span>
+            <Logo className="w-4 h-4 flex-shrink-0" />
+            <span className="font-semibold text-xs">{label}</span>
         </a>
     );
 };
