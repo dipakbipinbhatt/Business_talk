@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Save, ArrowLeft, Loader2, Info } from 'lucide-react';
+import { Save, ArrowLeft, Loader2, Info, Plus, Trash2 } from 'lucide-react';
 import { useAuthStore } from '../../store/useStore';
 import logoImage from '../../assets/logo.jpg';
 
@@ -10,14 +10,15 @@ const ABOUT_STORAGE_KEY = 'businessTalk_aboutContent';
 
 interface AboutContent {
     title: string;
-    description1: string;
-    description2: string;
+    paragraphs: string[];
 }
 
 const defaultContent: AboutContent = {
     title: 'About Business Talk',
-    description1: 'Business Talk is your premier podcast for cutting-edge trends, groundbreaking research, valuable insights from notable books, and engaging discussions from the realms of business and academia.',
-    description2: 'Whether you\'re an academic scholar, researcher, business professional, or entrepreneur, our episodes will inspire you to question the status quo and spark actionable ideas. Our goal is to deliver valuable research insights from the world\'s renowned scholars, sharing their unique perspectives and expertise.',
+    paragraphs: [
+        'Business Talk is your premier podcast for cutting-edge trends, groundbreaking research, valuable insights from notable books, and engaging discussions from the realms of business and academia.',
+        'Whether you\'re an academic scholar, researcher, business professional, or entrepreneur, our episodes will inspire you to question the status quo and spark actionable ideas. Our goal is to deliver valuable research insights from the world\'s renowned scholars, sharing their unique perspectives and expertise.',
+    ],
 };
 
 export default function AboutEditor() {
@@ -37,7 +38,16 @@ export default function AboutEditor() {
         const saved = localStorage.getItem(ABOUT_STORAGE_KEY);
         if (saved) {
             try {
-                setContent(JSON.parse(saved));
+                const parsed = JSON.parse(saved);
+                // Handle old format with description1/description2
+                if (parsed.description1) {
+                    setContent({
+                        title: parsed.title || defaultContent.title,
+                        paragraphs: [parsed.description1, parsed.description2].filter(Boolean),
+                    });
+                } else {
+                    setContent(parsed);
+                }
             } catch (e) {
                 console.error('Error loading saved content:', e);
             }
@@ -63,6 +73,28 @@ export default function AboutEditor() {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const addParagraph = () => {
+        setContent(prev => ({
+            ...prev,
+            paragraphs: [...prev.paragraphs, ''],
+        }));
+    };
+
+    const removeParagraph = (index: number) => {
+        if (content.paragraphs.length <= 1) return;
+        setContent(prev => ({
+            ...prev,
+            paragraphs: prev.paragraphs.filter((_, i) => i !== index),
+        }));
+    };
+
+    const updateParagraph = (index: number, value: string) => {
+        setContent(prev => ({
+            ...prev,
+            paragraphs: prev.paragraphs.map((p, i) => (i === index ? value : p)),
+        }));
     };
 
     return (
@@ -127,32 +159,46 @@ export default function AboutEditor() {
                             />
                         </div>
 
-                        {/* Description 1 */}
+                        {/* Paragraphs */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                First Paragraph
-                            </label>
-                            <textarea
-                                value={content.description1}
-                                onChange={(e) => setContent({ ...content, description1: e.target.value })}
-                                rows={4}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent resize-none"
-                                placeholder="Enter the first paragraph..."
-                            />
-                        </div>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-gray-700">
+                                    Paragraphs
+                                </label>
+                                <button
+                                    onClick={addParagraph}
+                                    className="flex items-center space-x-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>Add Paragraph</span>
+                                </button>
+                            </div>
 
-                        {/* Description 2 */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Second Paragraph
-                            </label>
-                            <textarea
-                                value={content.description2}
-                                onChange={(e) => setContent({ ...content, description2: e.target.value })}
-                                rows={4}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent resize-none"
-                                placeholder="Enter the second paragraph..."
-                            />
+                            <div className="space-y-4">
+                                {content.paragraphs.map((paragraph, index) => (
+                                    <div key={index} className="relative">
+                                        <div className="flex items-start gap-2">
+                                            <span className="text-xs text-gray-500 mt-3 w-6">{index + 1}.</span>
+                                            <textarea
+                                                value={paragraph}
+                                                onChange={(e) => updateParagraph(index, e.target.value)}
+                                                rows={3}
+                                                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent resize-none text-justify"
+                                                placeholder={`Enter paragraph ${index + 1}...`}
+                                            />
+                                            {content.paragraphs.length > 1 && (
+                                                <button
+                                                    onClick={() => removeParagraph(index)}
+                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-1"
+                                                    title="Remove paragraph"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Save Button */}
@@ -183,15 +229,20 @@ export default function AboutEditor() {
                     <div className="mt-10 pt-8 border-t">
                         <h3 className="text-lg font-bold text-gray-900 mb-4">Preview</h3>
                         <div className="bg-gray-50 rounded-lg p-6">
-                            <div className="text-center">
+                            <div className="text-center mb-4">
                                 <img
                                     src={logoImage}
                                     alt="Business Talk Logo"
-                                    className="w-24 h-24 object-contain rounded-full shadow-lg mx-auto mb-4"
+                                    className="w-20 h-20 object-contain rounded-full shadow-lg mx-auto mb-3"
                                 />
-                                <h4 className="text-2xl font-bold text-gray-900 mb-4">{content.title}</h4>
-                                <p className="text-gray-700 mb-4">{content.description1}</p>
-                                <p className="text-gray-600">{content.description2}</p>
+                                <h4 className="text-xl font-bold text-gray-900">{content.title}</h4>
+                            </div>
+                            <div className="text-justify space-y-3">
+                                {content.paragraphs.map((paragraph, index) => (
+                                    <p key={index} className="text-gray-700 text-sm leading-relaxed">
+                                        {paragraph}
+                                    </p>
+                                ))}
                             </div>
                         </div>
                     </div>
