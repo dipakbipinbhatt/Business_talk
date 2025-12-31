@@ -107,11 +107,11 @@ export default function Home() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.5 }}
                     >
-                        <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                        <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
                                 Upcoming Podcast Episodes
                             </h2>
-                            <span className="px-4 py-2 bg-green-100 text-green-700 font-semibold rounded-full text-sm">
+                            <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-100 text-green-700 font-semibold rounded-full text-xs sm:text-sm whitespace-nowrap">
                                 {upcomingPodcasts.length} Scheduled
                             </span>
                         </div>
@@ -153,17 +153,17 @@ export default function Home() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.5 }}
                     >
-                        <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+                        <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
                                 Previous Episodes
                             </h2>
                             {pastPodcasts.length > 0 && (
                                 <Link
                                     to="/podcasts"
-                                    className="flex items-center space-x-2 text-maroon-700 hover:text-maroon-800 font-semibold transition-colors group whitespace-nowrap"
+                                    className="flex items-center space-x-2 text-maroon-700 hover:text-maroon-800 font-semibold transition-colors group whitespace-nowrap text-sm sm:text-base"
                                 >
                                     <span>View&nbsp;All</span>
-                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+                                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
                                 </Link>
                             )}
                         </div>

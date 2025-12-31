@@ -169,6 +169,14 @@ export default function AdminCalendar() {
                         <Upload className="w-5 h-5" />
                         Import
                     </Link>
+                    <Link
+                        to="/admin/about"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                        title="Manage About Us Content"
+                    >
+                        <FileText className="w-5 h-5" />
+                        About Us
+                    </Link>
                 </div>
                 {isLoading ? (
                     <div className="bg-white rounded-xl shadow-sm p-12 text-center">
@@ -219,63 +227,63 @@ export default function AdminCalendar() {
 
                                 {/* Calendar Grid */}
                                 <div className="border rounded-lg overflow-hidden">
-                            {/* Day Names */}
-                            <div className="grid grid-cols-7 bg-gray-50 border-b">
-                                {dayNames.map(day => (
-                                    <div key={day} className="p-3 text-center text-sm font-semibold text-gray-600">
-                                        {day}
+                                    {/* Day Names */}
+                                    <div className="grid grid-cols-7 bg-gray-50 border-b">
+                                        {dayNames.map(day => (
+                                            <div key={day} className="p-3 text-center text-sm font-semibold text-gray-600">
+                                                {day}
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
 
-                            {/* Calendar Days */}
-                            <div className="grid grid-cols-7">
-                                {calendarDays.map((day, index) => {
-                                    const dayPodcasts = day ? getPodcastsForDate(day) : [];
-                                    const isToday = isCurrentMonth && day === today.getDate();
+                                    {/* Calendar Days */}
+                                    <div className="grid grid-cols-7">
+                                        {calendarDays.map((day, index) => {
+                                            const dayPodcasts = day ? getPodcastsForDate(day) : [];
+                                            const isToday = isCurrentMonth && day === today.getDate();
 
-                                    return (
-                                        <div
-                                            key={index}
-                                            className={`min-h-[100px] p-2 border-b border-r ${day ? 'bg-white' : 'bg-gray-50'
-                                                } ${isToday ? 'bg-maroon-50' : ''}`}
-                                        >
-                                            {day && (
-                                                <>
-                                                    <span className={`inline-flex items-center justify-center w-7 h-7 text-sm ${isToday
-                                                            ? 'bg-maroon-600 text-white rounded-full font-bold'
-                                                            : 'text-gray-700'
-                                                        }`}>
-                                                        {day}
-                                                    </span>
-
-                                                    <div className="mt-1 space-y-1">
-                                                        {dayPodcasts.slice(0, 3).map(podcast => {
-                                                            const isPast = new Date(podcast.scheduledDate) < today;
-                                                            return (
-                                                                <button
-                                                                    key={podcast._id}
-                                                                    onClick={() => setSelectedPodcast(podcast)}
-                                                                    className={`w-full text-left px-2 py-1 rounded text-xs truncate ${isPast
-                                                                            ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                                            : 'bg-maroon-100 text-maroon-700 hover:bg-maroon-200'
-                                                                        }`}
-                                                                >
-                                                                    EP {podcast.episodeNumber}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                        {dayPodcasts.length > 3 && (
-                                                            <span className="text-xs text-gray-500 px-2">
-                                                                +{dayPodcasts.length - 3} more
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className={`min-h-[100px] p-2 border-b border-r ${day ? 'bg-white' : 'bg-gray-50'
+                                                        } ${isToday ? 'bg-maroon-50' : ''}`}
+                                                >
+                                                    {day && (
+                                                        <>
+                                                            <span className={`inline-flex items-center justify-center w-7 h-7 text-sm ${isToday
+                                                                ? 'bg-maroon-600 text-white rounded-full font-bold'
+                                                                : 'text-gray-700'
+                                                                }`}>
+                                                                {day}
                                                             </span>
-                                                        )}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    );
-                                })}
+
+                                                            <div className="mt-1 space-y-1">
+                                                                {dayPodcasts.slice(0, 3).map(podcast => {
+                                                                    const isPast = new Date(podcast.scheduledDate) < today;
+                                                                    return (
+                                                                        <button
+                                                                            key={podcast._id}
+                                                                            onClick={() => setSelectedPodcast(podcast)}
+                                                                            className={`w-full text-left px-2 py-1 rounded text-xs truncate ${isPast
+                                                                                ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                                                : 'bg-maroon-100 text-maroon-700 hover:bg-maroon-200'
+                                                                                }`}
+                                                                        >
+                                                                            EP {podcast.episodeNumber}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                                {dayPodcasts.length > 3 && (
+                                                                    <span className="text-xs text-gray-500 px-2">
+                                                                        +{dayPodcasts.length - 3} more
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -297,85 +305,85 @@ export default function AdminCalendar() {
             </main>
 
             {/* Podcast Detail Modal */}
-                {selectedPodcast && (
+            {selectedPodcast && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                    onClick={() => setSelectedPodcast(null)}
+                >
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-                        onClick={() => setSelectedPodcast(null)}
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6"
+                        onClick={e => e.stopPropagation()}
                     >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${new Date(selectedPodcast.scheduledDate) < today
-                                        ? 'bg-gray-100 text-gray-700'
-                                        : 'bg-maroon-100 text-maroon-700'
-                                    }`}>
-                                    Episode {selectedPodcast.episodeNumber} - {
-                                        new Date(selectedPodcast.scheduledDate) < today ? 'Past' : 'Upcoming'
-                                    }
-                                </span>
-                                <button
-                                    onClick={() => setSelectedPodcast(null)}
-                                    className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                        <div className="flex justify-between items-start mb-4">
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${new Date(selectedPodcast.scheduledDate) < today
+                                ? 'bg-gray-100 text-gray-700'
+                                : 'bg-maroon-100 text-maroon-700'
+                                }`}>
+                                Episode {selectedPodcast.episodeNumber} - {
+                                    new Date(selectedPodcast.scheduledDate) < today ? 'Past' : 'Upcoming'
+                                }
+                            </span>
+                            <button
+                                onClick={() => setSelectedPodcast(null)}
+                                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            {selectedPodcast.title}
+                        </h3>
+
+                        <div className="space-y-3 text-gray-600">
+                            <div className="flex items-center gap-2">
+                                <User className="w-4 h-4" />
+                                <span>{selectedPodcast.guestName} - {selectedPodcast.guestTitle}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <CalendarIcon className="w-4 h-4" />
+                                <span>{new Date(selectedPodcast.scheduledDate).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                <span>{selectedPodcast.scheduledTime}</span>
+                            </div>
+                        </div>
+
+                        <p className="mt-4 text-gray-700 text-sm leading-relaxed">
+                            {selectedPodcast.description}
+                        </p>
+
+                        <div className="mt-6 flex gap-3">
+                            <Link
+                                to={`/admin/podcast/edit/${selectedPodcast._id}`}
+                                className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-maroon-600 text-white font-semibold rounded-lg hover:bg-maroon-700 transition-colors"
+                            >
+                                Edit Episode
+                            </Link>
+                            {selectedPodcast.youtubeUrl && new Date(selectedPodcast.scheduledDate) < today && (
+                                <a
+                                    href={selectedPodcast.youtubeUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
                                 >
-                                    ×
-                                </button>
-                            </div>
-
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                {selectedPodcast.title}
-                            </h3>
-
-                            <div className="space-y-3 text-gray-600">
-                                <div className="flex items-center gap-2">
-                                    <User className="w-4 h-4" />
-                                    <span>{selectedPodcast.guestName} - {selectedPodcast.guestTitle}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <CalendarIcon className="w-4 h-4" />
-                                    <span>{new Date(selectedPodcast.scheduledDate).toLocaleDateString('en-US', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                    })}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4" />
-                                    <span>{selectedPodcast.scheduledTime}</span>
-                                </div>
-                            </div>
-
-                            <p className="mt-4 text-gray-700 text-sm leading-relaxed">
-                                {selectedPodcast.description}
-                            </p>
-
-                            <div className="mt-6 flex gap-3">
-                                <Link
-                                    to={`/admin/podcast/edit/${selectedPodcast._id}`}
-                                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-maroon-600 text-white font-semibold rounded-lg hover:bg-maroon-700 transition-colors"
-                                >
-                                    Edit Episode
-                                </Link>
-                                {selectedPodcast.youtubeUrl && new Date(selectedPodcast.scheduledDate) < today && (
-                                    <a
-                                        href={selectedPodcast.youtubeUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
-                                    >
-                                        Watch
-                                    </a>
-                                )}
-                            </div>
-                        </motion.div>
+                                    Watch
+                                </a>
+                            )}
+                        </div>
                     </motion.div>
-                )}
+                </motion.div>
+            )}
         </div>
     );
 }

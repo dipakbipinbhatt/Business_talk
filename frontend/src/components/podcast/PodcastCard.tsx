@@ -322,8 +322,8 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                 </h3>
 
                 {/* Guest Info */}
-                <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden shadow-sm ring-2 ring-gray-300">
+                <div className="flex items-start space-x-3 mb-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden shadow-sm ring-2 ring-gray-300">
                         {guestAvatar ? (
                             <img
                                 src={guestAvatar}
@@ -337,15 +337,15 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                             />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-400">
-                                <User className="w-6 h-6 text-gray-500" />
+                                <User className="w-5 h-5 sm:w-6 sm:h-6 text-gray-500" />
                             </div>
                         )}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 overflow-hidden">
                         <div className="text-sm font-bold text-gray-900 truncate">{podcast.guestName}</div>
-                        <div className="text-xs text-gray-600 line-clamp-1">{podcast.guestTitle}</div>
+                        <div className="text-xs text-gray-600 truncate">{podcast.guestTitle}</div>
                         {podcast.guestInstitution && (
-                            <div className="text-xs text-gray-500 line-clamp-1">{podcast.guestInstitution}</div>
+                            <div className="text-xs text-gray-500 truncate">{podcast.guestInstitution}</div>
                         )}
                     </div>
                 </div>

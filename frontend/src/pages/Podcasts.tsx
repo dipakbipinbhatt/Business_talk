@@ -1,13 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Calendar, Youtube, Play, User } from 'lucide-react';
+import { Search, Filter, Calendar, Youtube, Play, User, Loader2 } from 'lucide-react';
 import { podcastAPI, Podcast } from '../services/api';
 import { usePodcastStore } from '../store/useStore';
+
+// Number of items per row (3 on desktop) * 2 rows = 6 items initially
+const ITEMS_PER_LOAD = 6;
 
 export default function Podcasts() {
     const { upcomingPodcasts, pastPodcasts, setPodcasts, setLoading, isLoading } = usePodcastStore();
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [displayCount, setDisplayCount] = useState(ITEMS_PER_LOAD);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const loadMoreRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const fetchPodcasts = async () => {
@@ -26,6 +32,45 @@ export default function Podcasts() {
 
         fetchPodcasts();
     }, [setPodcasts, setLoading]);
+
+    // Reset display count when search term changes
+    useEffect(() => {
+        setDisplayCount(ITEMS_PER_LOAD);
+    }, [searchTerm]);
+
+    // Intersection Observer for infinite scroll
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const first = entries[0];
+                if (first.isIntersecting && !isLoadingMore) {
+                    loadMoreItems();
+                }
+            },
+            { threshold: 0.1, rootMargin: '100px' }
+        );
+
+        const currentRef = loadMoreRef.current;
+        if (currentRef) {
+            observer.observe(currentRef);
+        }
+
+        return () => {
+            if (currentRef) {
+                observer.unobserve(currentRef);
+            }
+        };
+    }, [displayCount, isLoadingMore]);
+
+    // Load more items function
+    const loadMoreItems = useCallback(() => {
+        setIsLoadingMore(true);
+        // Simulate a small delay for smooth UX
+        setTimeout(() => {
+            setDisplayCount(prev => prev + ITEMS_PER_LOAD);
+            setIsLoadingMore(false);
+        }, 300);
+    }, []);
 
     // Filter podcasts based on search
     const filterBySearch = (podcastList: Podcast[]) => {
@@ -223,33 +268,57 @@ export default function Podcasts() {
                     {filteredPast.length > 0 && (
                         <section className="py-12 px-4 bg-gray-50">
                             <div className="max-w-7xl mx-auto">
-                                <div className="flex items-center justify-between mb-8">
-                                    <div>
-                                        <h2 className="text-3xl font-bold text-gray-900">
+                                <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+                                    <div className="flex-1 min-w-0">
+                                        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
                                             Previous <span className="text-maroon-700">Episodes</span>
                                         </h2>
-                                        <p className="text-gray-600 mt-1">Watch our previous conversations</p>
+                                        <p className="text-gray-600 mt-1 text-sm sm:text-base">Watch our previous conversations</p>
                                     </div>
-                                    <div className="flex items-center space-x-3">
-                                        <span className="px-4 py-2 bg-maroon-100 text-maroon-700 font-semibold rounded-full text-sm">
-                                            {filteredPast.length} Episodes
-                                        </span>
-                                        <button
-                                            onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
-                                            className="px-4 py-2 bg-maroon-700 text-white font-semibold rounded-full text-sm hover:bg-maroon-800 transition-colors flex items-center space-x-1 whitespace-nowrap"
-                                        >
-                                            <span>View&nbsp;All</span>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                    </div>
+                                    <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-maroon-100 text-maroon-700 font-semibold rounded-full text-xs sm:text-sm whitespace-nowrap flex-shrink-0">
+                                        {filteredPast.length} Episodes
+                                    </span>
                                 </div>
                                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {filteredPast.map((podcast, index) => (
-                                        <PastCard key={podcast._id} podcast={podcast} index={index} />
+                                    {filteredPast.slice(0, displayCount).map((podcast, index) => (
+                                        <PastCard key={podcast._id} podcast={podcast} index={index % ITEMS_PER_LOAD} />
                                     ))}
                                 </div>
+
+                                {/* Load More Sentinel for Infinite Scroll */}
+                                {displayCount < filteredPast.length && (
+                                    <div
+                                        ref={loadMoreRef}
+                                        className="flex flex-col items-center justify-center py-12"
+                                    >
+                                        {isLoadingMore ? (
+                                            <div className="flex items-center space-x-2">
+                                                <Loader2 className="w-6 h-6 text-maroon-600 animate-spin" />
+                                                <span className="text-gray-600">Loading more episodes...</span>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={loadMoreItems}
+                                                className="px-6 py-3 bg-maroon-700 text-white font-semibold rounded-full hover:bg-maroon-800 transition-colors flex items-center space-x-2"
+                                            >
+                                                <span>Load More Episodes</span>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                        <p className="text-gray-500 text-sm mt-2">
+                                            Showing {Math.min(displayCount, filteredPast.length)} of {filteredPast.length} episodes
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* All Loaded Message */}
+                                {displayCount >= filteredPast.length && filteredPast.length > ITEMS_PER_LOAD && (
+                                    <div className="text-center py-8">
+                                        <p className="text-gray-500">All {filteredPast.length} episodes loaded</p>
+                                    </div>
+                                )}
                             </div>
                         </section>
                     )}
