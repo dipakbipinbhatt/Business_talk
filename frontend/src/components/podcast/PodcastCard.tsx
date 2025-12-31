@@ -36,12 +36,26 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
     };
 
     // Get guest avatar - for small circular image
+    // Falls back to thumbnail cropped to focus on guest (typically on right side)
     const getGuestAvatar = () => {
-        return getImageUrl(podcast.guestImage);
+        // First priority: dedicated guest image
+        const guestUrl = getImageUrl(podcast.guestImage);
+        if (guestUrl) return { url: guestUrl, position: 'center' };
+
+        // Second priority: thumbnail image (crop to focus on guest - usually right side)
+        const thumbnailUrl = getImageUrl(podcast.thumbnailImage);
+        if (thumbnailUrl) return { url: thumbnailUrl, position: 'right 20%' };
+
+        // Third priority: YouTube thumbnail (guest usually on left/center)
+        if (youtubeId) {
+            return { url: getYoutubeThumbnail(youtubeId), position: 'center 30%' };
+        }
+
+        return null;
     };
 
     const thumbnailUrl = getThumbnailUrl();
-    const guestAvatar = getGuestAvatar();
+    const guestAvatarData = getGuestAvatar();
 
     // State for image error handling (moved to top level to comply with Rules of Hooks)
     const [imageError, setImageError] = React.useState(false);
@@ -114,11 +128,12 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                             {/* Middle: Guest Info */}
                             <div className="flex items-center space-x-3 mb-4">
                                 <div className="w-14 h-14 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ring-2 ring-maroon-200 shadow-md">
-                                    {guestAvatar ? (
+                                    {guestAvatarData ? (
                                         <img
-                                            src={guestAvatar}
+                                            src={guestAvatarData.url}
                                             alt={podcast.guestName}
                                             className="w-full h-full object-cover"
+                                            style={{ objectPosition: guestAvatarData.position }}
                                             loading="lazy"
                                             onError={(e) => {
                                                 const target = e.target as HTMLImageElement;
@@ -324,11 +339,12 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                 {/* Guest Info */}
                 <div className="flex items-start space-x-3 mb-4">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden shadow-sm ring-2 ring-gray-300">
-                        {guestAvatar ? (
+                        {guestAvatarData ? (
                             <img
-                                src={guestAvatar}
+                                src={guestAvatarData.url}
                                 alt={podcast.guestName}
                                 className="w-full h-full object-cover"
+                                style={{ objectPosition: guestAvatarData.position }}
                                 loading="lazy"
                                 onError={(e) => {
                                     const target = e.target as HTMLImageElement;
