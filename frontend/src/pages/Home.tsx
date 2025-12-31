@@ -226,7 +226,7 @@ export default function Home() {
             </section>
 
             {/* Stay Updated Section */}
-            <section className="py-16 bg-gray-100 text-gray-900">
+            <section className="py-16 bg-maroon-50 text-maroon-900">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -237,7 +237,7 @@ export default function Home() {
                         <h2 className="text-3xl md:text-4xl font-bold mb-4">
                             Stay Updated with Our Latest Episodes
                         </h2>
-                        <p className="text-gray-600 text-lg mb-8 max-w-2xl mx-auto">
+                        <p className="text-maroon-800 text-lg mb-8 max-w-2xl mx-auto">
                             Subscribe to Business Talk on your favorite podcast platform and never miss an episode.
                         </p>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 max-w-4xl mx-auto">
