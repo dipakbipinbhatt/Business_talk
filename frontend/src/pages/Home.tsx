@@ -19,9 +19,11 @@ const PLATFORM_URLS = {
 };
 
 export default function Home() {
-    const { upcomingPodcasts, pastPodcasts, setPodcasts, setLoading, isLoading, shouldRefetch, clearCache } = usePodcastStore();
+    const { upcomingPodcasts, pastPodcasts, setUpcomingPodcasts, setPastPodcasts, setLoading, isLoading, shouldRefetch, clearCache } = usePodcastStore();
     const [error, setError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
+
+    const HOME_PAST_LIMIT = 8;
 
     const handleRetry = () => {
         clearCache(); // Clear cache to force fresh fetch
@@ -38,8 +40,14 @@ export default function Home() {
 
             setLoading(true);
             try {
-                const response = await podcastAPI.getAll({ limit: 500 });
-                setPodcasts(response.data.podcasts);
+                // Fetch separately to optimize load
+                const [upcomingRes, pastRes] = await Promise.all([
+                    podcastAPI.getAll({ category: 'upcoming' }),
+                    podcastAPI.getAll({ category: 'past', limit: HOME_PAST_LIMIT })
+                ]);
+
+                setUpcomingPodcasts(upcomingRes.data.podcasts || []);
+                setPastPodcasts(pastRes.data.podcasts || []);
                 setError(null);
             } catch (err) {
                 console.error('Error fetching podcasts:', err);
@@ -50,11 +58,11 @@ export default function Home() {
         };
 
         fetchPodcasts();
-    }, [setPodcasts, setLoading, shouldRefetch, retryCount, clearCache]);
+    }, [setUpcomingPodcasts, setPastPodcasts, setLoading, shouldRefetch, retryCount, clearCache]);
 
     // Get all upcoming podcasts and top 50 past podcasts
     const allUpcoming = upcomingPodcasts;
-    const top50Past = pastPodcasts.slice(0, 50);
+    const top50Past = pastPodcasts;
 
     return (
         <div className="min-h-screen bg-white">

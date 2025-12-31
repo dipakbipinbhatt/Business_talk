@@ -8,22 +8,33 @@ import { usePodcastStore } from '../store/useStore';
 const ITEMS_PER_LOAD = 6;
 
 export default function Podcasts() {
-    const { upcomingPodcasts, pastPodcasts, setPodcasts, setLoading, isLoading, shouldRefetch } = usePodcastStore();
+    const { upcomingPodcasts, pastPodcasts, setPodcasts, setLoading, isLoading, shouldRefetch, clearCache } = usePodcastStore();
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [displayCount, setDisplayCount] = useState(ITEMS_PER_LOAD);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
     const loadMoreRef = useRef<HTMLDivElement>(null);
+
+    const handleRetry = () => {
+        clearCache();
+        setError(null);
+        setRetryCount(prev => prev + 1);
+    };
 
     useEffect(() => {
         const fetchPodcasts = async () => {
-            // Only fetch if cache is expired or empty
-            if (!shouldRefetch()) {
+            // Only fetch if cache is expired, empty, OR simply partially loaded (from Home page)
+            // Heuristic: if we have very few past podcasts (< 10) but likely have more, we should refetch
+            const isPartialCache = pastPodcasts.length > 0 && pastPodcasts.length < 10;
+
+            if (!shouldRefetch() && !isPartialCache && retryCount === 0) {
                 return;
             }
 
             setLoading(true);
             try {
+                // Fetch ALL podcasts for the dedicated page
                 const response = await podcastAPI.getAll({ limit: 500 });
                 setPodcasts(response.data.podcasts);
                 setError(null);
@@ -36,7 +47,7 @@ export default function Podcasts() {
         };
 
         fetchPodcasts();
-    }, [setPodcasts, setLoading, shouldRefetch]);
+    }, [setPodcasts, setLoading, shouldRefetch, pastPodcasts.length, retryCount, clearCache]);
 
     // Reset display count when search term changes
     useEffect(() => {
@@ -275,7 +286,13 @@ export default function Podcasts() {
                 </div>
             ) : error ? (
                 <div className="py-16 text-center">
-                    <p className="text-red-600">{error}</p>
+                    <p className="text-red-600 mb-4">{error}</p>
+                    <button
+                        onClick={handleRetry}
+                        className="px-6 py-3 bg-maroon-700 text-white font-semibold rounded-lg hover:bg-maroon-800 transition-colors"
+                    >
+                        Retry
+                    </button>
                 </div>
             ) : (
                 <>
