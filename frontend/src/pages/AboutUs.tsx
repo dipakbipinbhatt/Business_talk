@@ -24,17 +24,17 @@ export default function AboutUs() {
                 </div>
             </section>
 
-            {/* Main Content - Minimal padding */}
-            <section className="py-2 px-4 bg-white">
-                <div className="max-w-4xl mx-auto">
+            {/* Main Content */}
+            <section className="py-12 px-4 bg-white">
+                <div className="max-w-4xl mx-auto mb-16">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100"
+                        className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-gray-100"
                     >
                         {/* Profile Section - Logo only */}
-                        <div className="flex justify-center mb-4">
+                        <div className="flex justify-center mb-6">
                             <img
                                 src={logoImage}
                                 alt="Business Talk Logo"
@@ -43,8 +43,8 @@ export default function AboutUs() {
                         </div>
 
                         {/* Business Talk Description - Responsive: left on mobile, justify on desktop */}
-                        <div>
-                            <p className="text-gray-700 leading-relaxed text-base mb-4 text-justify">
+                        <div className="space-y-6">
+                            <p className="text-gray-700 leading-relaxed text-base text-justify">
                                 Business Talk is your premier podcast for cutting-edge trends, groundbreaking research,
                                 valuable insights from notable books, and engaging discussions from the realms of
                                 business and academia.
