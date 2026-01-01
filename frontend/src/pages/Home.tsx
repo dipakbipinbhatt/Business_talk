@@ -106,8 +106,8 @@ export default function Home() {
                             Simply click on the respective channel icons and immerse yourself in the world of learning!
                         </p>
 
-                        {/* Platform Buttons - Grid layout for single line on desktop, 2 per row on mobile */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 max-w-4xl mx-auto">
+                        {/* Platform Buttons - Professional flex layout */}
+                        <div className="flex flex-wrap justify-center items-center gap-3 md:gap-4 max-w-5xl mx-auto">
                             <PlatformButton platform="youtube" url={PLATFORM_URLS.youtube} label="YouTube" />
                             <PlatformButton platform="apple" url={PLATFORM_URLS.applePodcasts} label="Apple Podcasts" />
                             <PlatformButton platform="amazon" url={PLATFORM_URLS.amazonMusic} label="Amazon Music" />

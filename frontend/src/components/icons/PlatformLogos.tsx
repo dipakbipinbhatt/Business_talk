@@ -24,14 +24,13 @@ interface PlatformButtonProps {
 }
 
 export const PlatformButton = ({ platform, url, label, className = "" }: PlatformButtonProps) => {
-    // Keep the background colors for consistent button style, but might need to adjust if logos have backgrounds
     const platformConfig = {
-        youtube: { bg: 'bg-red-600', hover: 'hover:bg-red-700' },
-        spotify: { bg: 'bg-green-500', hover: 'hover:bg-green-600' },
-        apple: { bg: 'bg-purple-600', hover: 'hover:bg-purple-700' },
-        amazon: { bg: 'bg-blue-500', hover: 'hover:bg-blue-600' },
-        audible: { bg: 'bg-orange-500', hover: 'hover:bg-orange-600' },
-        soundcloud: { bg: 'bg-orange-600', hover: 'hover:bg-orange-700' },
+        youtube: { bg: 'bg-red-600', hover: 'hover:bg-red-700', shadow: 'hover:shadow-red-600/50' },
+        spotify: { bg: 'bg-green-500', hover: 'hover:bg-green-600', shadow: 'hover:shadow-green-500/50' },
+        apple: { bg: 'bg-purple-600', hover: 'hover:bg-purple-700', shadow: 'hover:shadow-purple-600/50' },
+        amazon: { bg: 'bg-blue-500', hover: 'hover:bg-blue-600', shadow: 'hover:shadow-blue-500/50' },
+        audible: { bg: 'bg-orange-500', hover: 'hover:bg-orange-600', shadow: 'hover:shadow-orange-500/50' },
+        soundcloud: { bg: 'bg-orange-600', hover: 'hover:bg-orange-700', shadow: 'hover:shadow-orange-600/50' },
     };
 
     const config = platformConfig[platform];
@@ -42,16 +41,16 @@ export const PlatformButton = ({ platform, url, label, className = "" }: Platfor
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`inline-flex items-center gap-2 px-4 py-2.5 ${config.bg} text-white rounded-md ${config.hover} transition-colors shadow-md hover:shadow-lg ${className}`}
+            className={`group inline-flex items-center gap-3 px-5 py-3 ${config.bg} text-white rounded-lg ${config.hover} transition-all duration-300 shadow-lg ${config.shadow} hover:scale-105 ${className}`}
         >
-            <div className="bg-white rounded p-1 flex items-center justify-center">
+            <div className="bg-white rounded-md p-1.5 flex items-center justify-center shadow-inner">
                 <img
                     src={imageSrc}
                     alt={`${label} logo`}
-                    className="w-5 h-5 object-contain"
+                    className="w-6 h-6 object-contain"
                 />
             </div>
-            <span className="font-semibold text-sm whitespace-nowrap">{label}</span>
+            <span className="font-bold text-sm whitespace-nowrap tracking-wide">{label}</span>
         </a>
     );
 };
@@ -59,18 +58,18 @@ export const PlatformButton = ({ platform, url, label, className = "" }: Platfor
 // Small icon version for footer and cards
 export const PlatformIcon = ({ platform, url, size = "md" }: { platform: 'youtube' | 'spotify' | 'apple' | 'amazon' | 'audible' | 'soundcloud', url: string, size?: 'sm' | 'md' | 'lg' }) => {
     const platformConfig = {
-        youtube: { bg: 'bg-red-600', hover: 'hover:bg-red-700' },
-        spotify: { bg: 'bg-green-500', hover: 'hover:bg-green-600' },
-        apple: { bg: 'bg-purple-600', hover: 'hover:bg-purple-700' },
-        amazon: { bg: 'bg-blue-500', hover: 'hover:bg-blue-600' },
-        audible: { bg: 'bg-orange-500', hover: 'hover:bg-orange-600' },
-        soundcloud: { bg: 'bg-orange-600', hover: 'hover:bg-orange-700' },
+        youtube: { bg: 'bg-red-600', hover: 'hover:bg-red-700', shadow: 'hover:shadow-red-600/50' },
+        spotify: { bg: 'bg-green-500', hover: 'hover:bg-green-600', shadow: 'hover:shadow-green-500/50' },
+        apple: { bg: 'bg-purple-600', hover: 'hover:bg-purple-700', shadow: 'hover:shadow-purple-600/50' },
+        amazon: { bg: 'bg-blue-500', hover: 'hover:bg-blue-600', shadow: 'hover:shadow-blue-500/50' },
+        audible: { bg: 'bg-orange-500', hover: 'hover:bg-orange-600', shadow: 'hover:shadow-orange-500/50' },
+        soundcloud: { bg: 'bg-orange-600', hover: 'hover:bg-orange-700', shadow: 'hover:shadow-orange-600/50' },
     };
 
     const sizeConfig = {
-        sm: { circle: 'w-8 h-8', icon: 'w-5 h-5', padding: 'p-1' },
-        md: { circle: 'w-12 h-12', icon: 'w-7 h-7', padding: 'p-1.5' },
-        lg: { circle: 'w-16 h-16', icon: 'w-10 h-10', padding: 'p-2' },
+        sm: { circle: 'w-10 h-10', icon: 'w-6 h-6', padding: 'p-1.5' },
+        md: { circle: 'w-14 h-14', icon: 'w-8 h-8', padding: 'p-2' },
+        lg: { circle: 'w-20 h-20', icon: 'w-12 h-12', padding: 'p-2.5' },
     };
 
     const config = platformConfig[platform];
@@ -82,9 +81,9 @@ export const PlatformIcon = ({ platform, url, size = "md" }: { platform: 'youtub
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`${sizes.circle} rounded-full ${config.bg} ${config.hover} flex items-center justify-center transition-colors shadow-lg flex-shrink-0`}
+            className={`${sizes.circle} rounded-full ${config.bg} ${config.hover} flex items-center justify-center transition-all duration-300 shadow-lg ${config.shadow} hover:scale-110 flex-shrink-0`}
         >
-            <div className={`bg-white rounded-full ${sizes.padding} flex items-center justify-center`}>
+            <div className={`bg-white rounded-full ${sizes.padding} flex items-center justify-center shadow-inner`}>
                 <img
                     src={imageSrc}
                     alt={`${platform} logo`}
