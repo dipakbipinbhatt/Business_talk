@@ -26,7 +26,10 @@ export default function Footer() {
                         </p>
                     </div>
 
-                    {/* Quick Links - Column 1 */}
+                    {/* Empty column for spacing */}
+                    <div></div>
+
+                    {/* Quick Links */}
                     <div>
                         <h3 className="text-white font-semibold mb-4">Quick Links</h3>
                         <ul className="space-y-2">
@@ -35,23 +38,6 @@ export default function Footer() {
                                     Home
                                 </Link>
                             </li>
-                            <li>
-                                <Link to="/about" className="hover:text-white transition-colors">
-                                    About
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/podcasts" className="hover:text-white transition-colors">
-                                    Podcasts
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-
-                    {/* Quick Links - Column 2 */}
-                    <div>
-                        <h3 className="text-white font-semibold mb-4">Quick Links</h3>
-                        <ul className="space-y-2">
                             <li>
                                 <Link to="/blog" className="hover:text-white transition-colors">
                                     Blog
