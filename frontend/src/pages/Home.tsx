@@ -106,8 +106,8 @@ export default function Home() {
                             Simply click on the respective channel icons and immerse yourself in the world of learning!
                         </p>
 
-                        {/* Platform Buttons - Professional flex layout */}
-                        <div className="flex flex-wrap justify-center items-center gap-4 md:gap-4 max-w-6xl mx-auto">
+                        {/* Platform Buttons - All in one line on desktop */}
+                        <div className="flex flex-wrap lg:flex-nowrap justify-center items-center gap-3 lg:gap-3 max-w-7xl mx-auto overflow-x-auto pb-2">
                             <PlatformButton platform="youtube" url={PLATFORM_URLS.youtube} label="YouTube" />
                             <PlatformButton platform="apple" url={PLATFORM_URLS.applePodcasts} label="Apple Podcasts" />
                             <PlatformButton platform="amazon" url={PLATFORM_URLS.amazonMusic} label="Amazon Music" />

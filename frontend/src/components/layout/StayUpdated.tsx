@@ -32,7 +32,7 @@ export default function StayUpdated() {
                     <p className="text-white/80 text-lg mb-8 max-w-2xl mx-auto">
                         Subscribe to Business Talk on your favorite podcast platform and never miss an episode.
                     </p>
-                    <div className="flex flex-wrap justify-center items-center gap-4 md:gap-4 max-w-6xl mx-auto">
+                    <div className="flex flex-wrap lg:flex-nowrap justify-center items-center gap-3 lg:gap-3 max-w-7xl mx-auto overflow-x-auto pb-2">
                         <PlatformButton platform="youtube" url={PLATFORM_URLS.youtube} label="YouTube" />
                         <PlatformButton platform="apple" url={PLATFORM_URLS.applePodcasts} label="Apple Podcasts" />
                         <PlatformButton platform="spotify" url={PLATFORM_URLS.spotify} label="Spotify" />
