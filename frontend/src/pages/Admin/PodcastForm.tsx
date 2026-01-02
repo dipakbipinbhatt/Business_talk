@@ -450,7 +450,7 @@ export default function PodcastForm() {
                                     >
                                         <div className="flex items-center justify-between mb-4">
                                             <h3 className="text-md font-semibold text-gray-800">
-                                                Guest {index + 1}
+                                                Guest {index + 1}{index === 0 && <span className="text-maroon-700 ml-2 text-sm">(Main Guest)</span>}
                                             </h3>
                                             {guests.length > 1 && (
                                                 <button

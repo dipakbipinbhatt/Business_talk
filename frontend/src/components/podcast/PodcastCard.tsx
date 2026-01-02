@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Youtube, User } from 'lucide-react';
+import { Calendar, Clock, Youtube, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { Podcast } from '../../services/api';
 import { getImageUrl, extractYoutubeId, getYoutubeThumbnail } from '../../utils/imageUrl';
 import logoImage from '../../assets/logo.jpg';
@@ -16,6 +16,8 @@ interface PodcastCardProps {
 }
 
 export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardProps) {
+    const [showAllGuests, setShowAllGuests] = useState(false);
+    
     const formattedDate = new Date(podcast.scheduledDate).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -128,15 +130,16 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                 </h3>
                             </div>
 
-                            {/* Middle: Guest Info - Show all guests */}
-                            <div className="space-y-3 mb-4">
-                                {guests.map((guest, index) => (
-                                    <div key={index} className="flex items-center space-x-3">
+                            {/* Middle: Guest Info - Show main guest with "View More" option */}
+                            <div className="mb-4">
+                                {/* Main Guest (First Guest) */}
+                                {guests.length > 0 && (
+                                    <div className="flex items-center space-x-3 mb-2">
                                         <div className="w-14 h-14 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ring-2 ring-maroon-200 shadow-md">
-                                            {guest.image && getImageUrl(guest.image) ? (
+                                            {guests[0].image && getImageUrl(guests[0].image) ? (
                                                 <img
-                                                    src={getImageUrl(guest.image) || ''}
-                                                    alt={guest.name}
+                                                    src={getImageUrl(guests[0].image) || ''}
+                                                    alt={guests[0].name}
                                                     className="w-full h-full object-cover"
                                                     loading="lazy"
                                                     onError={(e) => {
@@ -158,14 +161,66 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                             )}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <div className="text-sm font-bold text-gray-900 truncate">{guest.name}</div>
-                                            <div className="text-xs text-gray-600 truncate mt-0.5">{guest.title}</div>
-                                            {guest.institution && (
-                                                <div className="text-xs text-gray-500 truncate mt-0.5">{guest.institution}</div>
+                                            <div className="text-sm font-bold text-gray-900 truncate">{guests[0].name}</div>
+                                            <div className="text-xs text-gray-600 truncate mt-0.5">{guests[0].title}</div>
+                                            {guests[0].institution && (
+                                                <div className="text-xs text-gray-500 truncate mt-0.5">{guests[0].institution}</div>
                                             )}
                                         </div>
+                                        {/* View More Button */}
+                                        {guests.length > 1 && (
+                                            <button
+                                                onClick={() => setShowAllGuests(!showAllGuests)}
+                                                className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold text-maroon-700 bg-maroon-50 hover:bg-maroon-100 rounded-md transition-colors flex items-center space-x-1"
+                                            >
+                                                <span>{showAllGuests ? 'Hide' : `+${guests.length - 1} More`}</span>
+                                                {showAllGuests ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                            </button>
+                                        )}
                                     </div>
-                                ))}
+                                )}
+
+                                {/* Additional Guests (shown when expanded) */}
+                                {showAllGuests && guests.length > 1 && (
+                                    <div className="space-y-3 pl-2 border-l-2 border-maroon-200 ml-7 mt-3">
+                                        {guests.slice(1).map((guest, index) => (
+                                            <div key={index + 1} className="flex items-center space-x-3">
+                                                <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ring-2 ring-gray-300 shadow-sm">
+                                                    {guest.image && getImageUrl(guest.image) ? (
+                                                        <img
+                                                            src={getImageUrl(guest.image) || ''}
+                                                            alt={guest.name}
+                                                            className="w-full h-full object-cover"
+                                                            loading="lazy"
+                                                            onError={(e) => {
+                                                                const target = e.target as HTMLImageElement;
+                                                                target.parentElement!.innerHTML = `
+                                                                    <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-500">
+                                                                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                                            <circle cx="12" cy="7" r="4"></circle>
+                                                                        </svg>
+                                                                    </div>
+                                                                `;
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-500">
+                                                            <User className="w-6 h-6 text-white" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-sm font-semibold text-gray-800 truncate">{guest.name}</div>
+                                                    <div className="text-xs text-gray-600 truncate mt-0.5">{guest.title}</div>
+                                                    {guest.institution && (
+                                                        <div className="text-xs text-gray-500 truncate mt-0.5">{guest.institution}</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Bottom: Date, Time & Platform Icons */}
@@ -306,15 +361,16 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                     {podcast.title}
                 </h3>
 
-                {/* Guest Info - Show all guests */}
-                <div className="space-y-3 mb-4">
-                    {guests.map((guest, index) => (
-                        <div key={index} className="flex items-start space-x-3">
+                {/* Guest Info - Show main guest with "View More" option */}
+                <div className="mb-4">
+                    {/* Main Guest (First Guest) */}
+                    {guests.length > 0 && (
+                        <div className="flex items-start space-x-3 mb-2">
                             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden shadow-sm ring-2 ring-gray-300">
-                                {guest.image && getImageUrl(guest.image) ? (
+                                {guests[0].image && getImageUrl(guests[0].image) ? (
                                     <img
-                                        src={getImageUrl(guest.image) || ''}
-                                        alt={guest.name}
+                                        src={getImageUrl(guests[0].image) || ''}
+                                        alt={guests[0].name}
                                         className="w-full h-full object-cover"
                                         loading="lazy"
                                         onError={(e) => {
@@ -336,14 +392,66 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                 )}
                             </div>
                             <div className="flex-1 min-w-0 overflow-hidden">
-                                <div className="text-sm font-bold text-gray-900 truncate">{guest.name}</div>
-                                <div className="text-xs text-gray-600 truncate">{guest.title}</div>
-                                {guest.institution && (
-                                    <div className="text-xs text-gray-500 truncate">{guest.institution}</div>
+                                <div className="text-sm font-bold text-gray-900 truncate">{guests[0].name}</div>
+                                <div className="text-xs text-gray-600 truncate">{guests[0].title}</div>
+                                {guests[0].institution && (
+                                    <div className="text-xs text-gray-500 truncate">{guests[0].institution}</div>
                                 )}
                             </div>
+                            {/* View More Button */}
+                            {guests.length > 1 && (
+                                <button
+                                    onClick={() => setShowAllGuests(!showAllGuests)}
+                                    className="flex-shrink-0 px-2 py-1 text-xs font-semibold text-maroon-700 bg-maroon-50 hover:bg-maroon-100 rounded-md transition-colors flex items-center space-x-1"
+                                >
+                                    <span>{showAllGuests ? 'Hide' : `+${guests.length - 1}`}</span>
+                                    {showAllGuests ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                </button>
+                            )}
                         </div>
-                    ))}
+                    )}
+
+                    {/* Additional Guests (shown when expanded) */}
+                    {showAllGuests && guests.length > 1 && (
+                        <div className="space-y-2 pl-2 border-l-2 border-maroon-200 ml-6 mt-2">
+                            {guests.slice(1).map((guest, index) => (
+                                <div key={index + 1} className="flex items-start space-x-2">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden shadow-sm ring-1 ring-gray-300">
+                                        {guest.image && getImageUrl(guest.image) ? (
+                                            <img
+                                                src={getImageUrl(guest.image) || ''}
+                                                alt={guest.name}
+                                                className="w-full h-full object-cover"
+                                                loading="lazy"
+                                                onError={(e) => {
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.parentElement!.innerHTML = `
+                                                        <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-500">
+                                                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                                <circle cx="12" cy="7" r="4"></circle>
+                                                            </svg>
+                                                        </div>
+                                                    `;
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-500">
+                                                <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0 overflow-hidden">
+                                        <div className="text-xs sm:text-sm font-semibold text-gray-800 truncate">{guest.name}</div>
+                                        <div className="text-xs text-gray-600 truncate">{guest.title}</div>
+                                        {guest.institution && (
+                                            <div className="text-xs text-gray-500 truncate">{guest.institution}</div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Platform Links */}
