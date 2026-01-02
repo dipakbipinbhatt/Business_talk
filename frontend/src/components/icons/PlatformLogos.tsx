@@ -41,17 +41,17 @@ export const PlatformButton = ({ platform, url, label, className = "" }: Platfor
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className={`group flex items-center justify-center gap-2 px-4 py-3 w-[160px] ${config.bg} text-white rounded-lg ${config.hover} transition-all duration-300 shadow-lg ${config.shadow} hover:scale-105 hover:shadow-xl flex-shrink-0 ${className}`}
+            className={`group flex flex-col items-center justify-center gap-3 px-6 py-5 min-w-[140px] ${config.bg} text-white rounded-xl ${config.hover} transition-all duration-300 shadow-xl ${config.shadow} hover:scale-105 hover:shadow-2xl flex-shrink-0 ${className}`}
         >
-            <div className="bg-white/95 rounded p-1.5 flex items-center justify-center shadow-sm backdrop-blur-sm">
+            <div className="bg-white/95 rounded-lg p-2.5 flex items-center justify-center shadow-lg backdrop-blur-sm">
                 <img
                     src={imageSrc}
                     alt={`${label} logo`}
-                    className="w-6 h-6 object-contain"
+                    className="w-10 h-10 object-contain"
                     style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))' }}
                 />
             </div>
-            <span className="font-bold text-sm whitespace-nowrap">{label}</span>
+            <span className="font-bold text-base whitespace-nowrap">{label}</span>
         </a>
     );
 };
