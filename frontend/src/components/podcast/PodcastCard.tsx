@@ -125,7 +125,7 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                 <span className="text-xs font-semibold text-maroon-600 uppercase tracking-wide">
                                     Upcoming Episode
                                 </span>
-                                <h3 className="text-base font-bold text-gray-900 mt-2 line-clamp-2 hover:text-maroon-700 transition-colors leading-snug">
+                                <h3 className="text-base font-bold text-gray-900 mt-2 line-clamp-2 hover:text-maroon-700 transition-colors leading-snug min-h-[3rem]">
                                     {podcast.title}
                                 </h3>
                             </div>
@@ -356,8 +356,8 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                     {formattedDate}
                 </div>
 
-                {/* Title - with proper text alignment */}
-                <h3 className="font-bold text-gray-900 mb-4 line-clamp-2 group-hover:text-maroon-700 transition-colors text-base leading-snug">
+                {/* Title - with proper text alignment and fixed height */}
+                <h3 className="font-bold text-gray-900 mb-4 line-clamp-2 group-hover:text-maroon-700 transition-colors text-base leading-snug min-h-[3rem]">
                     {podcast.title}
                 </h3>
 
