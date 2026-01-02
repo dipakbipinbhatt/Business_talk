@@ -4,7 +4,6 @@ import { Calendar, Clock, Youtube, User } from 'lucide-react';
 import { Podcast } from '../../services/api';
 import { getImageUrl, extractYoutubeId, getYoutubeThumbnail } from '../../utils/imageUrl';
 import logoImage from '../../assets/logo.jpg';
-import youtubeLogo from '../../assets/platforms/youtube.png';
 import spotifyLogo from '../../assets/platforms/spotify.png';
 import appleLogo from '../../assets/platforms/apple-podcasts.png';
 import amazonLogo from '../../assets/platforms/amazon-music.png';
