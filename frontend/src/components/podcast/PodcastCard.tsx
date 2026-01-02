@@ -180,12 +180,12 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                     </div>
                                 )}
 
-                                {/* Additional Guests (shown when expanded) - Horizontal layout */}
+                                {/* Additional Guests (shown when expanded) - Same vertical line */}
                                 {showAllGuests && guests.length > 1 && (
-                                    <div className="flex items-center space-x-4 pl-4 border-l-2 border-maroon-200 ml-7 mt-3 overflow-x-auto">
+                                    <div className="space-y-3 mt-3">
                                         {guests.slice(1).map((guest, index) => (
-                                            <div key={index + 1} className="flex items-center space-x-2 flex-shrink-0">
-                                                <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ring-2 ring-gray-300 shadow-sm">
+                                            <div key={index + 1} className="flex items-center space-x-3">
+                                                <div className="w-14 h-14 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ring-2 ring-gray-300 shadow-md">
                                                     {guest.image && getImageUrl(guest.image) ? (
                                                         <img
                                                             src={getImageUrl(guest.image) || ''}
@@ -196,7 +196,7 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                                                 const target = e.target as HTMLImageElement;
                                                                 target.parentElement!.innerHTML = `
                                                                     <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-500">
-                                                                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                        <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                                                             <circle cx="12" cy="7" r="4"></circle>
                                                                         </svg>
@@ -206,15 +206,15 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                                         />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-500">
-                                                            <User className="w-6 h-6 text-white" />
+                                                            <User className="w-7 h-7 text-white" />
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <div className="text-sm font-semibold text-gray-800 truncate whitespace-nowrap">{guest.name}</div>
-                                                    <div className="text-xs text-gray-600 truncate whitespace-nowrap mt-0.5">{guest.title}</div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-sm font-bold text-gray-900 truncate">{guest.name}</div>
+                                                    <div className="text-xs text-gray-600 truncate mt-0.5">{guest.title}</div>
                                                     {guest.institution && (
-                                                        <div className="text-xs text-gray-500 truncate whitespace-nowrap mt-0.5">{guest.institution}</div>
+                                                        <div className="text-xs text-gray-500 truncate mt-0.5">{guest.institution}</div>
                                                     )}
                                                 </div>
                                             </div>
@@ -411,12 +411,12 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                         </div>
                     )}
 
-                    {/* Additional Guests (shown when expanded) - Horizontal layout */}
+                    {/* Additional Guests (shown when expanded) - Same vertical line */}
                     {showAllGuests && guests.length > 1 && (
-                        <div className="flex items-center space-x-3 pl-3 border-l-2 border-maroon-200 ml-6 mt-2 overflow-x-auto">
+                        <div className="space-y-3 mt-3">
                             {guests.slice(1).map((guest, index) => (
-                                <div key={index + 1} className="flex items-center space-x-2 flex-shrink-0">
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden shadow-sm ring-1 ring-gray-300">
+                                <div key={index + 1} className="flex items-start space-x-3">
+                                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden shadow-sm ring-2 ring-gray-300">
                                         {guest.image && getImageUrl(guest.image) ? (
                                             <img
                                                 src={getImageUrl(guest.image) || ''}
@@ -427,7 +427,7 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                                     const target = e.target as HTMLImageElement;
                                                     target.parentElement!.innerHTML = `
                                                         <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-500">
-                                                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                                                 <circle cx="12" cy="7" r="4"></circle>
                                                             </svg>
@@ -437,15 +437,15 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-500">
-                                                <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                                <User className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                                             </div>
                                         )}
                                     </div>
-                                    <div className="min-w-0">
-                                        <div className="text-xs sm:text-sm font-semibold text-gray-800 truncate whitespace-nowrap">{guest.name}</div>
-                                        <div className="text-xs text-gray-600 truncate whitespace-nowrap">{guest.title}</div>
+                                    <div className="flex-1 min-w-0 overflow-hidden">
+                                        <div className="text-sm font-bold text-gray-900 truncate">{guest.name}</div>
+                                        <div className="text-xs text-gray-600 truncate">{guest.title}</div>
                                         {guest.institution && (
-                                            <div className="text-xs text-gray-500 truncate whitespace-nowrap">{guest.institution}</div>
+                                            <div className="text-xs text-gray-500 truncate">{guest.institution}</div>
                                         )}
                                     </div>
                                 </div>
