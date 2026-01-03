@@ -74,6 +74,15 @@ export default function Home() {
                             />
                         </div>
 
+                        {/* Banner Image */}
+                        <div className="flex justify-center mb-8">
+                            <img
+                                src="/banner.png"
+                                alt="Business Talk Banner"
+                                className="w-full max-w-4xl object-contain rounded-lg shadow-md"
+                            />
+                        </div>
+
                         {/* Welcome text - dark black headers */}
                         <p className="text-base text-gray-800 max-w-4xl mx-auto mb-6 text-justify" style={{ lineHeight: '1.75rem' }}>
                             Welcome to Business Talk, your premier podcast for cutting-edge trends,
