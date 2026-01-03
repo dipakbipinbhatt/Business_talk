@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Calendar, Youtube, Play, User, Loader2 } from 'lucide-react';
+import { Search, Filter, Loader2 } from 'lucide-react';
 import { podcastAPI, Podcast } from '../services/api';
 import { usePodcastStore } from '../store/useStore';
 import StayUpdated from '../components/layout/StayUpdated';
+import PodcastCard from '../components/podcast/PodcastCard';
 
 // Number of items per row (3 on desktop) * 2 rows = 6 items initially
 const ITEMS_PER_LOAD = 6;
@@ -101,7 +102,7 @@ export default function Podcasts() {
                 podcast.description.toLowerCase().includes(search) ||
                 podcast.guestTitle?.toLowerCase().includes(search) ||
                 podcast.guestInstitution?.toLowerCase().includes(search) ||
-                podcast.guests?.some(guest => 
+                podcast.guests?.some(guest =>
                     guest.name.toLowerCase().includes(search) ||
                     guest.title.toLowerCase().includes(search) ||
                     guest.institution?.toLowerCase().includes(search)
@@ -111,139 +112,6 @@ export default function Podcasts() {
 
     const filteredUpcoming = filterBySearch(upcomingPodcasts);
     const filteredPast = filterBySearch(pastPodcasts);
-
-    // Extract YouTube ID for thumbnails
-    const extractYoutubeId = (url?: string) => {
-        if (!url) return null;
-        const match = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([\w-]{11})/);
-        return match ? match[1] : null;
-    };
-
-    // Get thumbnail URL for a podcast
-    const getThumbnailUrl = (podcast: Podcast) => {
-        if (podcast.thumbnailImage && podcast.thumbnailImage.startsWith('http')) {
-            return podcast.thumbnailImage;
-        }
-        if (podcast.guestImage && podcast.guestImage.startsWith('http')) {
-            return podcast.guestImage;
-        }
-        const youtubeId = extractYoutubeId(podcast.youtubeUrl);
-        if (youtubeId) {
-            return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
-        }
-        return null;
-    };
-
-    // Previous Episode Card
-    const PastCard = ({ podcast, index }: { podcast: Podcast; index: number }) => {
-        const youtubeId = extractYoutubeId(podcast.youtubeUrl);
-        const thumbnailUrl = getThumbnailUrl(podcast);
-        const formattedDate = new Date(podcast.scheduledDate).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        });
-
-        return (
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 group"
-            >
-                {/* Thumbnail with Play Button */}
-                <div className="relative aspect-video bg-gray-200">
-                    {thumbnailUrl ? (
-                        <>
-                            <img
-                                src={thumbnailUrl}
-                                alt={podcast.title}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                    if (youtubeId) {
-                                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
-                                    }
-                                }}
-                            />
-                            {podcast.youtubeUrl && (
-                                <a
-                                    href={podcast.youtubeUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
-                                >
-                                    <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                                        <Play className="w-8 h-8 text-white ml-1" fill="currentColor" />
-                                    </div>
-                                </a>
-                            )}
-                        </>
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
-                            <div className="text-center">
-                                <div className="w-16 h-16 mx-auto bg-gray-400 rounded-full flex items-center justify-center mb-2">
-                                    <Youtube className="w-8 h-8 text-white" />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Content */}
-                <div className="p-4">
-                    <div className="flex items-center text-xs text-gray-500 mb-2">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {formattedDate}
-                    </div>
-
-                    <h3 className="font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-maroon-700 transition-colors">
-                        {podcast.title}
-                    </h3>
-
-                    {/* Guest Info */}
-                    <div className="flex items-center space-x-2 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                            {podcast.guestImage && podcast.guestImage.startsWith('http') ? (
-                                <img
-                                    src={podcast.guestImage}
-                                    alt={podcast.guestName}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : thumbnailUrl ? (
-                                <img
-                                    src={thumbnailUrl}
-                                    alt={podcast.guestName}
-                                    className="w-full h-full object-cover"
-                                    style={{ objectPosition: 'right 20%' }}
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-400">
-                                    <User className="w-5 h-5 text-gray-500" />
-                                </div>
-                            )}
-                        </div>
-                        <div>
-                            <div className="text-sm font-semibold text-gray-900">{podcast.guestName}</div>
-                            <div className="text-xs text-gray-500 line-clamp-1">{podcast.guestTitle}</div>
-                        </div>
-                    </div>
-
-                    {/* Watch Button */}
-                    {podcast.youtubeUrl && (
-                        <a
-                            href={podcast.youtubeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center w-full py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors"
-                        >
-                            <Youtube className="w-4 h-4 mr-2" />
-                            Watch on YouTube
-                        </a>
-                    )}
-                </div>
-            </motion.div>
-        );
-    };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-cream-50 to-white">
@@ -318,9 +186,9 @@ export default function Podcasts() {
                                         {filteredPast.length} Episodes
                                     </span>
                                 </div>
-                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {filteredPast.slice(0, displayCount).map((podcast, index) => (
-                                        <PastCard key={podcast._id} podcast={podcast} index={index % ITEMS_PER_LOAD} />
+                                <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
+                                    {filteredPast.slice(0, displayCount).map((podcast: Podcast) => (
+                                        <PodcastCard key={podcast._id} podcast={podcast} variant="grid" />
                                     ))}
                                 </div>
 
