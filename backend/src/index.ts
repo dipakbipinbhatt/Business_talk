@@ -40,19 +40,28 @@ app.use(cors({
             return callback(null, true);
         }
 
+        // Allow EC2 IP address (with or without protocol)
+        if (origin.includes('13.234.32.101')) {
+            return callback(null, true);
+        }
+
         // Allow Render.com deployments
         if (origin.includes('.onrender.com')) {
             return callback(null, true);
         }
 
-        // Allow configured frontend URL
-        if (origin === config.cors.frontendUrl) {
-            return callback(null, true);
+        // Allow configured frontend URL (if set)
+        if (config.cors.frontendUrl && config.cors.frontendUrl !== 'http://localhost:5173') {
+            if (origin === config.cors.frontendUrl || 
+                origin.replace(/^https?:\/\//, '') === config.cors.frontendUrl.replace(/^https?:\/\//, '')) {
+                return callback(null, true);
+            }
         }
 
         // Allow custom domains
         if (origin.includes('businesstalkabcdeepalabhatt.com') ||
-            origin.includes('businesstalkwithdeepakbhatt.com')) {
+            origin.includes('businesstalkwithdeepakbhatt.com') ||
+            origin.includes('businesstalk.com')) {
             return callback(null, true);
         }
 
@@ -61,6 +70,13 @@ app.use(cors({
             return callback(null, true);
         }
 
+        // In production, allow any origin as fallback
+        if (config.server.nodeEnv === 'production') {
+            console.log(`CORS: Allowing origin in production mode: ${origin}`);
+            return callback(null, true);
+        }
+
+        console.log(`CORS: Rejecting origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
