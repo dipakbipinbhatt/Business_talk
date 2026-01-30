@@ -1,5 +1,12 @@
 import dotenv from 'dotenv';
+import path from 'path';
+
+// Try to load from backend/.env first
 dotenv.config();
+
+// Fallback: Try to load from root directory (for EC2 deployments)
+const rootEnvPath = path.resolve(__dirname, '../../.env');
+dotenv.config({ path: rootEnvPath });
 
 interface Config {
     mongodb: {
