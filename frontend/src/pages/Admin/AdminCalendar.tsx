@@ -12,6 +12,7 @@ import {
     Mic,
     FileText,
     Upload,
+    Settings,
 } from 'lucide-react';
 import { podcastAPI, Podcast } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
@@ -32,7 +33,19 @@ export default function AdminCalendar() {
         fetchPodcasts();
     }, [isAuthenticated, navigate]);
 
-    const fetchPodcasts = async () => {
+    // Handle scroll locking when modal is open
+    useEffect(() => {
+        if (selectedPodcast) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [selectedPodcast]);
+
+    async function fetchPodcasts() {
         try {
             // Fetch ALL podcasts (no limit) to show all past and future
             const response = await podcastAPI.getAll({ limit: 1000 });
@@ -42,7 +55,7 @@ export default function AdminCalendar() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }
 
     const handleLogout = () => {
         logout();
@@ -145,14 +158,14 @@ export default function AdminCalendar() {
                 {/* Tab Navigation */}
                 <div className="flex space-x-4 mb-8">
                     <Link
-                        to="/admin/dashboard"
+                        to="/admin/dashboard?tab=podcasts"
                         className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
                     >
                         <Mic className="w-5 h-5" />
                         Podcasts
                     </Link>
                     <Link
-                        to="/admin/dashboard"
+                        to="/admin/dashboard?tab=blogs"
                         className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
                     >
                         <FileText className="w-5 h-5" />
@@ -163,19 +176,26 @@ export default function AdminCalendar() {
                         Calendar
                     </div>
                     <Link
-                        to="/admin/import"
+                        to="/admin/dashboard?tab=import"
                         className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
                     >
                         <Upload className="w-5 h-5" />
                         Import
                     </Link>
                     <Link
-                        to="/admin/about"
+                        to="/admin/dashboard?tab=about"
                         className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
                         title="Manage About Us Content"
                     >
                         <FileText className="w-5 h-5" />
                         About Us
+                    </Link>
+                    <Link
+                        to="/admin/dashboard?tab=settings"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <Settings className="w-5 h-5" />
+                        Settings
                     </Link>
                 </div>
                 {isLoading ? (
@@ -306,15 +326,11 @@ export default function AdminCalendar() {
 
             {/* Podcast Detail Modal */}
             {selectedPodcast && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                <div
                     className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
                     onClick={() => setSelectedPodcast(null)}
                 >
-                    <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
+                    <div
                         className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6"
                         onClick={e => e.stopPropagation()}
                     >
@@ -381,8 +397,8 @@ export default function AdminCalendar() {
                                 </a>
                             )}
                         </div>
-                    </motion.div>
-                </motion.div>
+                    </div>
+                </div>
             )}
         </div>
     );

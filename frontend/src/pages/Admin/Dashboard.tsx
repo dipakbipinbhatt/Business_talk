@@ -47,8 +47,14 @@ export default function AdminDashboard() {
     const { podcasts, setPodcasts, removePodcast } = usePodcastStore();
     const [isLoading, setIsLoading] = useState(true);
 
-    // Determine active tab from URL or default to 'podcasts'
+    // Determine active tab from URL query param or path
     const getInitialTab = () => {
+        const params = new URLSearchParams(location.search);
+        const tabParam = params.get('tab');
+        if (tabParam && ['podcasts', 'blogs', 'import', 'about', 'settings', 'calendar'].includes(tabParam)) {
+            return tabParam as ActiveTab;
+        }
+
         const path = location.pathname;
         if (path.includes('/admin/blogs')) return 'blogs';
         if (path.includes('/admin/calendar')) return 'calendar';
@@ -731,12 +737,7 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
 
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="bg-white rounded-xl shadow-sm p-6"
-                            >
+                            <div className="bg-white rounded-xl shadow-sm p-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                                         <Calendar className="w-6 h-6 text-green-600" />
@@ -746,14 +747,9 @@ export default function AdminDashboard() {
                                         <p className="text-2xl font-bold text-gray-900">{stats.upcoming}</p>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
 
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="bg-white rounded-xl shadow-sm p-6"
-                            >
+                            <div className="bg-white rounded-xl shadow-sm p-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                                         <Clock className="w-6 h-6 text-blue-600" />
@@ -763,7 +759,7 @@ export default function AdminDashboard() {
                                         <p className="text-2xl font-bold text-gray-900">{stats.past}</p>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
                         </div>
 
                         {/* Podcasts Section */}
@@ -837,10 +833,8 @@ export default function AdminDashboard() {
                                     </div>
                                 ) : (
                                     podcasts.map((podcast) => (
-                                        <motion.div
+                                        <div
                                             key={podcast._id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
                                             className="p-6 hover:bg-gray-50 transition-colors"
                                         >
                                             <div className="flex items-start justify-between gap-4">
@@ -888,7 +882,7 @@ export default function AdminDashboard() {
                                                     </button>
                                                 </div>
                                             </div>
-                                        </motion.div>
+                                        </div>
                                     ))
                                 )}
                             </div>
@@ -955,11 +949,7 @@ export default function AdminDashboard() {
                     <>
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-white rounded-xl shadow-sm p-6"
-                            >
+                            <div className="bg-white rounded-xl shadow-sm p-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-12 h-12 bg-maroon-100 rounded-xl flex items-center justify-center">
                                         <FileText className="w-6 h-6 text-maroon-700" />
@@ -969,14 +959,9 @@ export default function AdminDashboard() {
                                         <p className="text-2xl font-bold text-gray-900">{blogStats.total}</p>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
 
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="bg-white rounded-xl shadow-sm p-6"
-                            >
+                            <div className="bg-white rounded-xl shadow-sm p-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                                         <Eye className="w-6 h-6 text-green-600" />
@@ -986,14 +971,9 @@ export default function AdminDashboard() {
                                         <p className="text-2xl font-bold text-gray-900">{blogStats.published}</p>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
 
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="bg-white rounded-xl shadow-sm p-6"
-                            >
+                            <div className="bg-white rounded-xl shadow-sm p-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
                                         <EyeOff className="w-6 h-6 text-yellow-600" />
@@ -1003,7 +983,7 @@ export default function AdminDashboard() {
                                         <p className="text-2xl font-bold text-gray-900">{blogStats.drafts}</p>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
                         </div>
 
                         {/* Blogs Section */}
@@ -1060,10 +1040,8 @@ export default function AdminDashboard() {
                                     </div>
                                 ) : (
                                     blogs.map((blog) => (
-                                        <motion.div
+                                        <div
                                             key={blog._id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
                                             className="p-6 hover:bg-gray-50 transition-colors"
                                         >
                                             <div className="flex items-start justify-between gap-4">
@@ -1112,7 +1090,7 @@ export default function AdminDashboard() {
                                                     </button>
                                                 </div>
                                             </div>
-                                        </motion.div>
+                                        </div>
                                     ))
                                 )}
                             </div>

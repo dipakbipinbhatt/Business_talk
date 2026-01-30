@@ -25,6 +25,18 @@ export default function Calendar() {
         }
     };
 
+    // Handle scroll locking when modal is open
+    useEffect(() => {
+        if (selectedPodcast) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [selectedPodcast]);
+
     // Calendar helpers
     const getDaysInMonth = (year: number, month: number) => {
         return new Date(year, month + 1, 0).getDate();

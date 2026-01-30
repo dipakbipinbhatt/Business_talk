@@ -41,6 +41,7 @@ export default defineConfig({
     },
     server: {
         port: 5173,
+        strictPort: true, // Force 5173, fail if busy instead of switching to 5175
         proxy: {
             '/api': {
                 target: 'http://localhost:5000',
