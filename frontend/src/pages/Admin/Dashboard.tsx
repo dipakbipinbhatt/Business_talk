@@ -729,7 +729,7 @@ export default function AdminDashboard() {
                                         <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
                                     </div>
                                 </div>
-                            </motion.div>
+                            </div>
 
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
