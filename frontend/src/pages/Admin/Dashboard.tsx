@@ -719,11 +719,7 @@ export default function AdminDashboard() {
                     <>
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-white rounded-xl shadow-sm p-6"
-                            >
+                            <div className="bg-white rounded-xl shadow-sm p-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-12 h-12 bg-maroon-100 rounded-xl flex items-center justify-center">
                                         <BarChart3 className="w-6 h-6 text-maroon-700" />
