@@ -155,8 +155,8 @@ export default function AdminCalendar() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Tab Navigation */}
-                <div className="flex space-x-4 mb-8">
+                {/* Tab Navigation - Fixed height to prevent layout shifts */}
+                <div className="flex space-x-4 mb-8" style={{ minHeight: '52px' }}>
                     <Link
                         to="/admin/dashboard?tab=podcasts"
                         className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
@@ -198,13 +198,16 @@ export default function AdminCalendar() {
                         Settings
                     </Link>
                 </div>
+                
+                {/* Content wrapper with fixed height to prevent jumping */}
+                <div className="relative" style={{ minHeight: '800px' }}>
                 {isLoading ? (
                     <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                         <CalendarIcon className="w-12 h-12 mx-auto text-maroon-600 animate-pulse" />
                         <p className="mt-4 text-gray-600">Loading calendar...</p>
                     </div>
                 ) : (
-                    <>
+                    <div className="tab-content-wrapper">
                         {/* Calendar Section */}
                         <div className="bg-white rounded-xl shadow-sm">
                             {/* Header */}
@@ -265,8 +268,9 @@ export default function AdminCalendar() {
                                             return (
                                                 <div
                                                     key={index}
-                                                    className={`min-h-[100px] p-2 border-b border-r ${day ? 'bg-white' : 'bg-gray-50'
+                                                    className={`p-2 border-b border-r ${day ? 'bg-white' : 'bg-gray-50'
                                                         } ${isToday ? 'bg-maroon-50' : ''}`}
+                                                    style={{ minHeight: '120px', height: '120px' }}
                                                 >
                                                     {day && (
                                                         <>
@@ -320,8 +324,9 @@ export default function AdminCalendar() {
                                 </div>
                             </div>
                         </div>
-                    </>
+                    </div>
                 )}
+                </div>
             </main>
 
             {/* Podcast Detail Modal */}

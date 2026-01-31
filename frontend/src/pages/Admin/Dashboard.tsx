@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import logoImage from '../../assets/logo.jpg';
 import {
     Mic,
@@ -30,15 +29,17 @@ import {
     RefreshCw,
     Server,
     Database,
-    ExternalLink
+    ExternalLink,
+    Mail,
+    MailOpen
 } from 'lucide-react';
-import { podcastAPI, blogAPI, Blog, importAPI, aboutUsAPI, AboutUsContent, renderAPI, systemHealthAPI, settingsAPI, SiteSettings, mongoAPI } from '../../services/api';
+import { podcastAPI, blogAPI, Blog, importAPI, aboutUsAPI, AboutUsContent, renderAPI, systemHealthAPI, settingsAPI, SiteSettings, mongoAPI, contactAPI, ContactMessage, ContactStats } from '../../services/api';
 import { useAuthStore, usePodcastStore } from '../../store/useStore';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import AnalyticsDashboard from '../../components/AnalyticsDashboard';
 
-type ActiveTab = 'podcasts' | 'blogs' | 'import' | 'about' | 'settings' | 'calendar';
+type ActiveTab = 'podcasts' | 'blogs' | 'import' | 'about' | 'settings' | 'calendar' | 'inbox';
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
@@ -51,7 +52,7 @@ export default function AdminDashboard() {
     const getInitialTab = () => {
         const params = new URLSearchParams(location.search);
         const tabParam = params.get('tab');
-        if (tabParam && ['podcasts', 'blogs', 'import', 'about', 'settings', 'calendar'].includes(tabParam)) {
+        if (tabParam && ['podcasts', 'blogs', 'import', 'about', 'settings', 'calendar', 'inbox'].includes(tabParam)) {
             return tabParam as ActiveTab;
         }
 
@@ -61,6 +62,7 @@ export default function AdminDashboard() {
         if (path.includes('/admin/import')) return 'import';
         if (path.includes('/admin/about')) return 'about';
         if (path.includes('/admin/settings')) return 'settings';
+        if (path.includes('/admin/inbox')) return 'inbox';
         return 'podcasts';
     };
 
@@ -101,6 +103,12 @@ export default function AdminDashboard() {
     const [mongoLoading, setMongoLoading] = useState(false);
     const [mongoError, setMongoError] = useState<string | null>(null);
 
+    // Inbox State
+    const [messages, setMessages] = useState<ContactMessage[]>([]);
+    const [messagesLoading, setMessagesLoading] = useState(false);
+    const [contactStats, setContactStats] = useState<ContactStats>({ total: 0, unread: 0, read: 0, archived: 0 });
+    const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'read' | 'archived'>('all');
+    const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
 
 
     // Set page title
@@ -123,7 +131,10 @@ export default function AdminDashboard() {
             fetchEpisodeSettings();
             fetchMongoCluster();
         }
-    }, [activeTab]);
+        if (activeTab === 'inbox') {
+            fetchMessages();
+        }
+    }, [activeTab, messageFilter]);
 
     const fetchRenderConfig = async () => {
         try {
@@ -257,6 +268,45 @@ export default function AdminDashboard() {
         } catch (error) {
             console.error('Error saving episode settings:', error);
             return false;
+        }
+    };
+
+    // Fetch contact messages
+    const fetchMessages = async () => {
+        setMessagesLoading(true);
+        try {
+            const [messagesRes, statsRes] = await Promise.all([
+                contactAPI.getMessages({ status: messageFilter === 'all' ? undefined : messageFilter }),
+                contactAPI.getStats(),
+            ]);
+            setMessages(messagesRes.data.messages);
+            setContactStats(statsRes.data.stats);
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+        } finally {
+            setMessagesLoading(false);
+        }
+    };
+
+    // Mark message as read
+    const handleMarkAsRead = async (id: string) => {
+        try {
+            await contactAPI.markAsRead(id);
+            fetchMessages();
+        } catch (error) {
+            console.error('Error marking message as read:', error);
+        }
+    };
+
+    // Delete message
+    const handleDeleteMessage = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this message?')) return;
+        try {
+            await contactAPI.delete(id);
+            setSelectedMessage(null);
+            fetchMessages();
+        } catch (error) {
+            console.error('Error deleting message:', error);
         }
     };
 
@@ -659,8 +709,8 @@ export default function AdminDashboard() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Tab Navigation */}
-                <div className="flex space-x-4 mb-8">
+                {/* Tab Navigation - Fixed height to prevent layout shifts */}
+                <div className="flex space-x-4 mb-8" style={{ minHeight: '52px' }}>
                     <button
                         onClick={() => setActiveTab('podcasts')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'podcasts'
@@ -718,11 +768,28 @@ export default function AdminDashboard() {
                         <Settings className="w-5 h-5" />
                         Settings
                     </button>
+                    <button
+                        onClick={() => setActiveTab('inbox')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors relative ${activeTab === 'inbox'
+                            ? 'bg-maroon-700 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                            }`}
+                    >
+                        <Mail className="w-5 h-5" />
+                        Inbox
+                        {contactStats.unread > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                                {contactStats.unread}
+                            </span>
+                        )}
+                    </button>
                 </div>
 
+                {/* Content wrapper with fixed height to prevent jumping */}
+                <div className="relative" style={{ minHeight: '800px' }}>
                 {/* Podcasts Tab */}
                 {activeTab === 'podcasts' && (
-                    <>
+                    <div className="tab-content-wrapper">
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <div className="bg-white rounded-xl shadow-sm p-6">
@@ -941,12 +1008,12 @@ export default function AdminDashboard() {
                                 </div>
                             )}
                         </div>
-                    </>
+                    </div>
                 )}
 
                 {/* Blogs Tab */}
                 {activeTab === 'blogs' && (
-                    <>
+                    <div className="tab-content-wrapper">
                         {/* Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             <div className="bg-white rounded-xl shadow-sm p-6">
@@ -1149,11 +1216,12 @@ export default function AdminDashboard() {
                                 </div>
                             )}
                         </div>
-                    </>
+                    </div>
                 )}
 
                 {/* Import Tab */}
                 {activeTab === 'import' && (
+                    <div className="tab-content-wrapper">
                     <div className="bg-white rounded-xl shadow-sm p-6">
                         <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                             <FileJson className="w-6 h-6 text-maroon-700" />
@@ -1256,10 +1324,12 @@ export default function AdminDashboard() {
                             )}
                         </button>
                     </div>
+                    </div>
                 )}
 
                 {/* About Us Tab */}
                 {activeTab === 'about' && (
+                    <div className="tab-content-wrapper">
                     <div className="bg-white rounded-xl shadow-sm p-6">
                         <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                             <Info className="w-6 h-6 text-maroon-700" />
@@ -1386,15 +1456,15 @@ export default function AdminDashboard() {
                             </>
                         )}
                     </div>
+                    </div>
                 )}
 
                 {/* Settings Tab */}
                 {activeTab === 'settings' && (
+                    <div className="tab-content-wrapper">
                     <div className="space-y-6">
                         {/* System Health Section */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
+                        <div
                             className="bg-white rounded-xl shadow-sm p-6"
                         >
                             <div className="flex items-center justify-between mb-6">
@@ -1437,13 +1507,10 @@ export default function AdminDashboard() {
                                     </div>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
 
                         {/* MongoDB Atlas Cluster Status */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
+                        <div
                             className="bg-white rounded-xl shadow-sm p-6"
                         >
                             <div className="flex items-center justify-between mb-6">
@@ -1517,14 +1584,11 @@ export default function AdminDashboard() {
                                     )}
                                 </div>
                             )}
-                        </motion.div>
+                        </div>
 
 
                         {/* Episode Loading Configuration */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.12 }}
+                        <div
                             className="bg-white rounded-xl shadow-sm p-6"
                         >
                             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -1624,15 +1688,12 @@ export default function AdminDashboard() {
                                     </div>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
 
 
 
                         {/* Google Analytics Configuration */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.15 }}
+                        <div
                             className="bg-white rounded-xl shadow-sm p-6"
                         >
                             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -1661,7 +1722,7 @@ export default function AdminDashboard() {
                                     Enter your Google Analytics 4 Measurement ID to enable tracking.
                                 </p>
                             </div>
-                        </motion.div>
+                        </div>
 
                         {/* Analytics Dashboard - Shows analytics data */}
                         <AnalyticsDashboard measurementId={episodeSettings.googleAnalyticsId} />
@@ -1708,8 +1769,151 @@ export default function AdminDashboard() {
                             <DeploymentsTable deployments={backendDeployments} title="Backend" />
                         </div>
                     </div>
+                    </div>
                 )
                 }
+
+                {/* Inbox Tab */}
+                {activeTab === 'inbox' && (
+                    <div className="tab-content-wrapper">
+                        {/* Stats Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            <div className="bg-white rounded-xl shadow-sm p-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                        <Mail className="w-6 h-6 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500">Total Messages</p>
+                                        <p className="text-2xl font-bold text-gray-900">{contactStats.total}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm p-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                        <Mail className="w-6 h-6 text-red-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500">Unread</p>
+                                        <p className="text-2xl font-bold text-gray-900">{contactStats.unread}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm p-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                        <MailOpen className="w-6 h-6 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500">Read</p>
+                                        <p className="text-2xl font-bold text-gray-900">{contactStats.read}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-xl shadow-sm p-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                                        <FileText className="w-6 h-6 text-gray-600" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-500">Archived</p>
+                                        <p className="text-2xl font-bold text-gray-900">{contactStats.archived}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Messages Section */}
+                        <div className="bg-white rounded-xl shadow-sm">
+                            {/* Header */}
+                            <div className="p-6 border-b">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-lg font-bold text-gray-900">Contact Messages</h2>
+                                        <p className="text-sm text-gray-500">Messages from your contact form</p>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        {(['all', 'unread', 'read', 'archived'] as const).map((f) => (
+                                            <button
+                                                key={f}
+                                                onClick={() => setMessageFilter(f)}
+                                                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${messageFilter === f
+                                                    ? 'bg-maroon-700 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                    }`}
+                                            >
+                                                {f.charAt(0).toUpperCase() + f.slice(1)}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Messages List */}
+                            <div className="divide-y">
+                                {messagesLoading ? (
+                                    <div className="p-12 text-center">
+                                        <Loader2 className="w-8 h-8 animate-spin text-maroon-700 mx-auto" />
+                                        <p className="text-gray-500 mt-2">Loading messages...</p>
+                                    </div>
+                                ) : messages.length === 0 ? (
+                                    <div className="p-12 text-center">
+                                        <Mail className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                        <p className="text-gray-500">No messages found</p>
+                                    </div>
+                                ) : (
+                                    messages.map((message) => (
+                                        <div
+                                            key={message._id}
+                                            className={`p-6 hover:bg-gray-50 transition-colors cursor-pointer ${message.status === 'unread' ? 'bg-blue-50' : ''
+                                                }`}
+                                            onClick={() => {
+                                                setSelectedMessage(message);
+                                                if (message.status === 'unread') {
+                                                    handleMarkAsRead(message._id);
+                                                }
+                                            }}
+                                        >
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-2 mb-2">
+                                                        {message.status === 'unread' && (
+                                                            <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                                        )}
+                                                        <h3 className={`font-semibold text-gray-900 ${message.status === 'unread' ? 'font-bold' : ''
+                                                            }`}>
+                                                            {message.name}
+                                                        </h3>
+                                                        <span className="text-sm text-gray-400">
+                                                            {new Date(message.createdAt).toLocaleDateString()}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 mb-1">{message.email}</p>
+                                                    <p className="text-sm text-gray-500 line-clamp-2">{message.message}</p>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteMessage(message._id);
+                                                    }}
+                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                </div>
             </main >
         </div >
     );

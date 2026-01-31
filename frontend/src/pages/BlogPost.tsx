@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, User, Clock, Share2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Clock, Share2, Loader2, Facebook, Twitter, Linkedin, Link as LinkIcon, Check } from 'lucide-react';
 import { blogAPI, Blog } from '../services/api';
 
 export default function BlogPost() {
@@ -9,6 +9,8 @@ export default function BlogPost() {
     const [post, setPost] = useState<Blog | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showShareMenu, setShowShareMenu] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         const fetchBlog = async () => {
@@ -34,6 +36,19 @@ export default function BlogPost() {
         fetchBlog();
     }, [id]);
 
+    // Close share menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (showShareMenu && !target.closest('.relative')) {
+                setShowShareMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showShareMenu]);
+
     // Set page title based on blog post
     useEffect(() => {
         if (post) {
@@ -51,6 +66,34 @@ export default function BlogPost() {
             month: 'long',
             day: 'numeric',
         });
+    };
+
+    // Share functions
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const shareTitle = post?.title || 'Business Talk Blog';
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => {
+            setCopied(false);
+            setShowShareMenu(false);
+        }, 2000);
+    };
+
+    const handleShareFacebook = () => {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
+        setShowShareMenu(false);
+    };
+
+    const handleShareTwitter = () => {
+        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`, '_blank');
+        setShowShareMenu(false);
+    };
+
+    const handleShareLinkedIn = () => {
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank');
+        setShowShareMenu(false);
     };
 
     // Loading state
@@ -124,16 +167,61 @@ export default function BlogPost() {
                         <Clock className="w-5 h-5 mr-2" />
                         <span>{post.readTime}</span>
                     </div>
-                    <button 
-                        className="flex items-center text-maroon-700 hover:text-maroon-800"
-                        onClick={() => {
-                            navigator.clipboard.writeText(window.location.href);
-                            alert('Link copied to clipboard!');
-                        }}
-                    >
-                        <Share2 className="w-5 h-5 mr-2" />
-                        <span>Share</span>
-                    </button>
+                    
+                    {/* Share Button with Dropdown */}
+                    <div className="relative">
+                        <button 
+                            className="flex items-center text-maroon-700 hover:text-maroon-800 transition-colors"
+                            onClick={() => setShowShareMenu(!showShareMenu)}
+                        >
+                            <Share2 className="w-5 h-5 mr-2" />
+                            <span>Share</span>
+                        </button>
+
+                        {/* Share Dropdown Menu */}
+                        {showShareMenu && (
+                            <div className="absolute top-full mt-2 right-0 bg-white rounded-lg shadow-xl border border-gray-200 py-2 w-48 z-10">
+                                <button
+                                    onClick={handleShareFacebook}
+                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3 text-gray-700 hover:text-blue-600 transition-colors"
+                                >
+                                    <Facebook className="w-5 h-5" />
+                                    <span>Facebook</span>
+                                </button>
+                                <button
+                                    onClick={handleShareTwitter}
+                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3 text-gray-700 hover:text-blue-400 transition-colors"
+                                >
+                                    <Twitter className="w-5 h-5" />
+                                    <span>Twitter</span>
+                                </button>
+                                <button
+                                    onClick={handleShareLinkedIn}
+                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3 text-gray-700 hover:text-blue-700 transition-colors"
+                                >
+                                    <Linkedin className="w-5 h-5" />
+                                    <span>LinkedIn</span>
+                                </button>
+                                <div className="border-t border-gray-200 my-1"></div>
+                                <button
+                                    onClick={handleCopyLink}
+                                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3 text-gray-700 hover:text-maroon-700 transition-colors"
+                                >
+                                    {copied ? (
+                                        <>
+                                            <Check className="w-5 h-5 text-green-600" />
+                                            <span className="text-green-600">Copied!</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <LinkIcon className="w-5 h-5" />
+                                            <span>Copy Link</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Excerpt */}

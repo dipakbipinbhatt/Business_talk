@@ -269,3 +269,18 @@ body {
 .ql-editor {
   min-height: 150px;
 }
+
+/* Admin Dashboard Tab Content - Prevent Shaking */
+.tab-content-wrapper {
+  animation: fadeIn 0.15s ease-in;
+  will-change: opacity;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

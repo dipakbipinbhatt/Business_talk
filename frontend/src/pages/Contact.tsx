@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Mail, MapPin, Send, Globe } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { contactAPI } from '../services/api';
 
 export default function Contact() {
     const [formData, setFormData] = useState({
@@ -20,15 +21,19 @@ export default function Contact() {
         e.preventDefault();
         setIsSubmitting(true);
 
-        // Simulate form submission
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            await contactAPI.submit(formData);
+            setSubmitted(true);
+            setFormData({ name: '', email: '', message: '' });
 
-        setIsSubmitting(false);
-        setSubmitted(true);
-        setFormData({ name: '', email: '', message: '' });
-
-        // Reset success message after 5 seconds
-        setTimeout(() => setSubmitted(false), 5000);
+            // Reset success message after 5 seconds
+            setTimeout(() => setSubmitted(false), 5000);
+        } catch (error) {
+            console.error('Error submitting contact form:', error);
+            alert('Failed to send message. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -85,7 +90,13 @@ export default function Contact() {
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-gray-900 mb-1">Email Us</h3>
-                                        <p className="text-gray-700">hellomrbhatt@gmail.com</p>
+                                        <a 
+                                            href="mailto:hellomrbhatt@gmail.com"
+                                            className="text-maroon-700 hover:text-maroon-800 hover:underline transition-colors cursor-pointer"
+                                            style={{ textDecoration: 'none' }}
+                                        >
+                                            hellomrbhatt@gmail.com
+                                        </a>
                                     </div>
                                 </div>
 

@@ -355,10 +355,10 @@ export const uploadImage = async (req: AuthRequest, res: Response): Promise<void
         const fs = await import('fs');
         const sharp = (await import('sharp')).default;
 
-        // Read and compress the image
+        // Read and compress the image - maintain aspect ratio, max width 1920px
         const compressedBuffer = await sharp(req.file.path)
-            .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: 75 })
+            .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 85 })
             .toBuffer();
 
         // Convert to Base64

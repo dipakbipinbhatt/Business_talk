@@ -312,3 +312,57 @@ export const analyticsAPI = {
 
 export default api;
 
+
+
+// Contact Message Types
+export interface ContactMessage {
+    _id: string;
+    name: string;
+    email: string;
+    message: string;
+    status: 'unread' | 'read' | 'archived';
+    createdAt: string;
+    readAt?: string;
+}
+
+export interface ContactStats {
+    total: number;
+    unread: number;
+    read: number;
+    archived: number;
+}
+
+// Contact API
+export const contactAPI = {
+    // Public - Submit contact form
+    submit: (data: { name: string; email: string; message: string }) =>
+        api.post('/contact/submit', data),
+
+    // Admin - Get all messages
+    getMessages: (params?: { status?: string; page?: number; limit?: number }) =>
+        api.get<{
+            messages: ContactMessage[];
+            pagination: { total: number; page: number; limit: number; pages: number };
+            unreadCount: number;
+        }>('/contact/messages', { params }),
+
+    // Admin - Get single message
+    getMessage: (id: string) =>
+        api.get<{ message: ContactMessage }>(`/contact/messages/${id}`),
+
+    // Admin - Mark as read
+    markAsRead: (id: string) =>
+        api.patch<{ message: string; data: ContactMessage }>(`/contact/messages/${id}/read`),
+
+    // Admin - Update status
+    updateStatus: (id: string, status: 'unread' | 'read' | 'archived') =>
+        api.patch<{ message: string; data: ContactMessage }>(`/contact/messages/${id}/status`, { status }),
+
+    // Admin - Delete message
+    delete: (id: string) =>
+        api.delete(`/contact/messages/${id}`),
+
+    // Admin - Get stats
+    getStats: () =>
+        api.get<{ stats: ContactStats }>('/contact/stats'),
+};
