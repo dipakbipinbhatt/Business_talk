@@ -108,7 +108,6 @@ export default function AdminDashboard() {
     const [messagesLoading, setMessagesLoading] = useState(false);
     const [contactStats, setContactStats] = useState<ContactStats>({ total: 0, unread: 0, read: 0, archived: 0 });
     const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'read' | 'archived'>('all');
-    const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
 
 
     // Set page title
@@ -303,7 +302,6 @@ export default function AdminDashboard() {
         if (!confirm('Are you sure you want to delete this message?')) return;
         try {
             await contactAPI.delete(id);
-            setSelectedMessage(null);
             fetchMessages();
         } catch (error) {
             console.error('Error deleting message:', error);
@@ -1872,7 +1870,6 @@ export default function AdminDashboard() {
                                             className={`p-6 hover:bg-gray-50 transition-colors cursor-pointer ${message.status === 'unread' ? 'bg-blue-50' : ''
                                                 }`}
                                             onClick={() => {
-                                                setSelectedMessage(message);
                                                 if (message.status === 'unread') {
                                                     handleMarkAsRead(message._id);
                                                 }
