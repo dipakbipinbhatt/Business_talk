@@ -336,10 +336,12 @@ export default function AdminCalendar() {
                     onClick={() => setSelectedPodcast(null)}
                 >
                     <div
-                        className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6"
+                        className="bg-white rounded-xl shadow-xl max-w-lg w-full flex flex-col"
+                        style={{ maxHeight: '90vh' }}
                         onClick={e => e.stopPropagation()}
                     >
-                        <div className="flex justify-between items-start mb-4">
+                        {/* Fixed Header */}
+                        <div className="flex justify-between items-start p-6 pb-4 border-b flex-shrink-0">
                             <span className={`px-3 py-1 rounded-full text-sm font-medium ${new Date(selectedPodcast.scheduledDate) < today
                                 ? 'bg-gray-100 text-gray-700'
                                 : 'bg-maroon-100 text-maroon-700'
@@ -356,51 +358,57 @@ export default function AdminCalendar() {
                             </button>
                         </div>
 
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">
-                            {selectedPodcast.title}
-                        </h3>
+                        {/* Scrollable Content */}
+                        <div className="overflow-y-auto flex-1 px-6 py-4">
+                            <h3 className="text-xl font-bold text-gray-900 mb-4">
+                                {selectedPodcast.title}
+                            </h3>
 
-                        <div className="space-y-3 text-gray-600">
-                            <div className="flex items-center gap-2">
-                                <User className="w-4 h-4" />
-                                <span>{selectedPodcast.guestName} - {selectedPodcast.guestTitle}</span>
+                            <div className="space-y-3 text-gray-600 mb-4">
+                                <div className="flex items-center gap-2">
+                                    <User className="w-4 h-4 flex-shrink-0" />
+                                    <span>{selectedPodcast.guestName} - {selectedPodcast.guestTitle}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <CalendarIcon className="w-4 h-4 flex-shrink-0" />
+                                    <span>{new Date(selectedPodcast.scheduledDate).toLocaleDateString('en-US', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 flex-shrink-0" />
+                                    <span>{selectedPodcast.scheduledTime}</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <CalendarIcon className="w-4 h-4" />
-                                <span>{new Date(selectedPodcast.scheduledDate).toLocaleDateString('en-US', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4" />
-                                <span>{selectedPodcast.scheduledTime}</span>
-                            </div>
+
+                            <p className="text-gray-700 text-sm leading-relaxed">
+                                {selectedPodcast.description}
+                            </p>
                         </div>
 
-                        <p className="mt-4 text-gray-700 text-sm leading-relaxed">
-                            {selectedPodcast.description}
-                        </p>
-
-                        <div className="mt-6 flex gap-3">
-                            <Link
-                                to={`/admin/podcast/edit/${selectedPodcast._id}`}
-                                className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-maroon-600 text-white font-semibold rounded-lg hover:bg-maroon-700 transition-colors"
-                            >
-                                Edit Episode
-                            </Link>
-                            {selectedPodcast.youtubeUrl && new Date(selectedPodcast.scheduledDate) < today && (
-                                <a
-                                    href={selectedPodcast.youtubeUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
+                        {/* Fixed Footer with Buttons */}
+                        <div className="p-6 pt-4 border-t flex-shrink-0">
+                            <div className="flex gap-3">
+                                <Link
+                                    to={`/admin/podcast/edit/${selectedPodcast._id}`}
+                                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-maroon-600 text-white font-semibold rounded-lg hover:bg-maroon-700 transition-colors"
                                 >
-                                    Watch
-                                </a>
-                            )}
+                                    Edit Episode
+                                </Link>
+                                {selectedPodcast.youtubeUrl && new Date(selectedPodcast.scheduledDate) < today && (
+                                    <a
+                                        href={selectedPodcast.youtubeUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
+                                    >
+                                        Watch
+                                    </a>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

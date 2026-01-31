@@ -183,7 +183,7 @@ export const getAllPodcasts = async (req: AuthRequest, res: Response): Promise<v
         // Build the query - if limitNum is 0, don't apply limit (return all)
         let podcastQuery = Podcast.find(query)
             .select(Object.keys(selectFields).length > 0 ? selectFields : {})
-            .sort({ createdAt: -1 });
+            .sort({ scheduledDate: -1, episodeNumber: -1 });
 
         // Only apply skip/limit if limitNum > 0
         if (limitNum > 0) {
