@@ -2,6 +2,9 @@
 
 version: '3.8'
 
+env_file:
+  - .env
+
 services:
   backend:
     build:

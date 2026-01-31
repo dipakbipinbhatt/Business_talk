@@ -139,6 +139,11 @@ app.get('/', (_req, res) => {
     });
 });
 
+// Loader.io verification token
+app.get('/loaderio-cfbb5ea2fbef73b0444dbbbe2f045bad.txt', (_req, res) => {
+    res.type('text/plain').send('loaderio-cfbb5ea2fbef73b0444dbbbe2f045bad');
+});
+
 // Health check
 app.get('/api/health', (_req, res) => {
     const dbState = mongoose.connection.readyState;
@@ -189,5 +194,7 @@ app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📁 Environment: ${config.server.nodeEnv}`);
 });
+
+
 
 export default app;
