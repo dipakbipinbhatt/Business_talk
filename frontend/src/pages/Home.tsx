@@ -67,11 +67,11 @@ export default function Home() {
 
         const fetchUpcoming = async () => {
             setIsUpcomingLoading(true);
-            console.log(`[Home] Fetching upcoming podcasts - page 1, limit ${settings.upcomingInitialLoad}`);
+            console.log(`[Home] Fetching ALL upcoming podcasts (unlimited)`);
             try {
                 const response = await podcastAPI.getAll({
                     category: 'upcoming',
-                    limit: settings.upcomingInitialLoad,
+                    limit: 0, // 0 = unlimited
                     page: 1
                 });
                 setUpcomingPodcasts(response.data.podcasts || []);
@@ -86,32 +86,13 @@ export default function Home() {
         };
 
         fetchUpcoming();
-    }, [settingsLoaded, retryCount, settings.upcomingInitialLoad]);
+    }, [settingsLoaded, retryCount]);
 
-    // Load MORE upcoming podcasts on scroll
+    // Load MORE upcoming - DISABLED (we load all at once now)
     const loadMoreUpcoming = useCallback(async () => {
-        if (isLoadingMoreUpcoming || upcomingPodcasts.length >= upcomingTotal) return;
-
-        setIsLoadingMoreUpcoming(true);
-        const nextPage = upcomingPage + 1;
-        console.log(`[Home] Loading more upcoming - page ${nextPage}, limit ${settings.upcomingBatchSize}`);
-
-        try {
-            const response = await podcastAPI.getAll({
-                category: 'upcoming',
-                limit: settings.upcomingBatchSize,
-                page: nextPage
-            });
-            const newPodcasts = response.data.podcasts || [];
-            setUpcomingPodcasts(prev => [...prev, ...newPodcasts]);
-            setUpcomingPage(nextPage);
-            console.log(`[Home] Added ${newPodcasts.length} more upcoming podcasts`);
-        } catch (err) {
-            console.error('[Home] Error loading more upcoming:', err);
-        } finally {
-            setIsLoadingMoreUpcoming(false);
-        }
-    }, [upcomingPodcasts.length, upcomingTotal, upcomingPage, isLoadingMoreUpcoming, settings.upcomingBatchSize]);
+        // No longer needed - we load all at once
+        return;
+    }, []);
 
     // Intersection observer for upcoming scroll
     useEffect(() => {
@@ -142,14 +123,13 @@ export default function Home() {
         const fetchPast = async () => {
             setIsPastLoading(true);
             setError(null);
-            console.log(`[Home] Fetching past podcasts - page 1, limit ${settings.pastInitialLoad}`);
+            console.log(`[Home] Fetching ALL past podcasts (unlimited)`);
 
             try {
                 const response = await podcastAPI.getAll({
                     category: 'past',
-                    limit: settings.pastInitialLoad,
+                    limit: 0, // 0 = unlimited
                     page: 1
-                    // Note: thumbnailImage is included to show uploaded promotional images
                 });
                 setPastPodcasts(response.data.podcasts || []);
                 setPastTotal(response.data.pagination?.total || 0);
@@ -164,33 +144,13 @@ export default function Home() {
         };
 
         fetchPast();
-    }, [settingsLoaded, retryCount, settings.pastInitialLoad]);
+    }, [settingsLoaded, retryCount]);
 
-    // Load MORE past podcasts on scroll
+    // Load MORE past - DISABLED (we load all at once now)
     const loadMorePast = useCallback(async () => {
-        if (isLoadingMorePast || pastPodcasts.length >= pastTotal) return;
-
-        setIsLoadingMorePast(true);
-        const nextPage = pastPage + 1;
-        console.log(`[Home] Loading more past - page ${nextPage}, limit ${settings.pastBatchSize}`);
-
-        try {
-            const response = await podcastAPI.getAll({
-                category: 'past',
-                limit: settings.pastBatchSize,
-                page: nextPage
-                // Note: thumbnailImage is included to show uploaded promotional images
-            });
-            const newPodcasts = response.data.podcasts || [];
-            setPastPodcasts(prev => [...prev, ...newPodcasts]);
-            setPastPage(nextPage);
-            console.log(`[Home] Added ${newPodcasts.length} more past podcasts`);
-        } catch (err) {
-            console.error('[Home] Error loading more past:', err);
-        } finally {
-            setIsLoadingMorePast(false);
-        }
-    }, [pastPodcasts.length, pastTotal, pastPage, isLoadingMorePast, settings.pastBatchSize]);
+        // No longer needed - we load all at once
+        return;
+    }, []);
 
     // Intersection observer for past scroll
     useEffect(() => {

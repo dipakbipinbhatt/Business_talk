@@ -27,7 +27,7 @@ export default function Blog() {
                 const response = await blogAPI.getAll({
                     category: activeCategory !== 'All' ? activeCategory : undefined,
                     search: searchTerm || undefined,
-                    limit: 50,
+                    limit: 0, // 0 = unlimited - load all blogs
                 });
                 setBlogs(response.data.blogs || []);
             } catch (err) {
