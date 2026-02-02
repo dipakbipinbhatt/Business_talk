@@ -157,57 +157,55 @@ export default function AdminCalendar() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Tab Navigation - Scrollable on small screens */}
-                <div className="overflow-x-auto mb-8">
-                    <div className="flex space-x-2 min-w-max">
-                        <Link
-                            to="/admin/dashboard?tab=podcasts"
-                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
-                        >
-                            <Mic className="w-5 h-5" />
-                            Podcasts
-                        </Link>
-                        <Link
-                            to="/admin/dashboard?tab=blogs"
-                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
-                        >
-                            <FileText className="w-5 h-5" />
-                            Blogs
-                        </Link>
-                        <div className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-maroon-700 text-white whitespace-nowrap">
-                            <CalendarIcon className="w-5 h-5" />
-                            Calendar
-                        </div>
-                        <Link
-                            to="/admin/dashboard?tab=inbox"
-                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
-                        >
-                            <Mail className="w-5 h-5" />
-                            Inbox
-                        </Link>
-                        <Link
-                            to="/admin/dashboard?tab=import"
-                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
-                        >
-                            <Upload className="w-5 h-5" />
-                            Import
-                        </Link>
-                        <Link
-                            to="/admin/dashboard?tab=about"
-                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
-                            title="Manage About Us Content"
-                        >
-                            <FileText className="w-5 h-5" />
-                            About Us
-                        </Link>
-                        <Link
-                            to="/admin/dashboard?tab=settings"
-                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
-                        >
-                            <Settings className="w-5 h-5" />
-                            Settings
-                        </Link>
+                {/* Tab Navigation - Fixed height to prevent layout shifts */}
+                <div className="flex space-x-4 mb-8" style={{ minHeight: '52px' }}>
+                    <Link
+                        to="/admin/dashboard?tab=podcasts"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <Mic className="w-5 h-5" />
+                        Podcasts
+                    </Link>
+                    <Link
+                        to="/admin/dashboard?tab=blogs"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <FileText className="w-5 h-5" />
+                        Blogs
+                    </Link>
+                    <div className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-maroon-700 text-white">
+                        <CalendarIcon className="w-5 h-5" />
+                        Calendar
                     </div>
+                    <Link
+                        to="/admin/dashboard?tab=import"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <Upload className="w-5 h-5" />
+                        Import
+                    </Link>
+                    <Link
+                        to="/admin/dashboard?tab=about"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                        title="Manage About Us Content"
+                    >
+                        <FileText className="w-5 h-5" />
+                        About Us
+                    </Link>
+                    <Link
+                        to="/admin/dashboard?tab=settings"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <Settings className="w-5 h-5" />
+                        Settings
+                    </Link>
+                    <Link
+                        to="/admin/dashboard?tab=inbox"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <Mail className="w-5 h-5" />
+                        Inbox
+                    </Link>
                 </div>
                 
                 {/* Content wrapper with fixed height to prevent jumping */}
