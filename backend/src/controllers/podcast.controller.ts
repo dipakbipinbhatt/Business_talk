@@ -181,9 +181,11 @@ export const getAllPodcasts = async (req: AuthRequest, res: Response): Promise<v
         // Default: Include all fields including images
 
         // Build the query - if limitNum is 0, don't apply limit (return all)
+        // Add allowDiskUse to handle large datasets
         let podcastQuery = Podcast.find(query)
             .select(Object.keys(selectFields).length > 0 ? selectFields : {})
-            .sort({ scheduledDate: -1, episodeNumber: -1 });
+            .sort({ scheduledDate: -1, episodeNumber: -1 })
+            .allowDiskUse(true); // Fix: Allow disk use for large sorts
 
         // Only apply skip/limit if limitNum > 0
         if (limitNum > 0) {

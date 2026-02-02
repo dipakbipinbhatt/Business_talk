@@ -29,6 +29,7 @@ export const getAllBlogs = async (req: Request, res: Response) => {
 
         const blogs = await Blog.find(query)
             .sort({ createdAt: -1 })
+            .allowDiskUse(true)
             .skip(skip)
             .limit(Number(limit));
 
@@ -53,7 +54,7 @@ export const getAllBlogs = async (req: Request, res: Response) => {
 export const getAdminBlogs = async (req: Request, res: Response) => {
     try {
         console.log('📋 Fetching all blogs for admin...');
-        const blogs = await Blog.find().sort({ createdAt: -1 });
+        const blogs = await Blog.find().sort({ createdAt: -1 }).allowDiskUse(true);
         console.log(`📊 Found ${blogs.length} blogs`);
         res.json({ blogs });
     } catch (error) {

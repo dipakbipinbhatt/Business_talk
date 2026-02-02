@@ -66,6 +66,7 @@ router.get('/messages', authenticateToken, async (req, res) => {
         const [messages, total, unreadCount] = await Promise.all([
             ContactMessage.find(query)
                 .sort({ createdAt: -1 })
+                .allowDiskUse(true)
                 .skip(skip)
                 .limit(Number(limit)),
             ContactMessage.countDocuments(query),

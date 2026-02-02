@@ -13,6 +13,7 @@ import {
     FileText,
     Upload,
     Settings,
+    Mail,
 } from 'lucide-react';
 import { podcastAPI, Podcast } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
@@ -175,6 +176,13 @@ export default function AdminCalendar() {
                         <CalendarIcon className="w-5 h-5" />
                         Calendar
                     </div>
+                    <Link
+                        to="/admin/dashboard?tab=inbox"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <Mail className="w-5 h-5" />
+                        Inbox
+                    </Link>
                     <Link
                         to="/admin/dashboard?tab=import"
                         className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
