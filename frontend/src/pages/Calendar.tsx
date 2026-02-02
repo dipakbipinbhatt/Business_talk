@@ -117,36 +117,48 @@ export default function Calendar() {
                         <CalendarIcon className="w-8 h-8 text-maroon-600" />
                         Podcast Calendar
                     </h1>
-                    <p className="text-gray-600 mt-2">View all upcoming and previous podcast episodes by date</p>
+                    <p className="text-gray-600 mt-2">
+                        All {podcasts.length} podcast episodes loaded. Navigate through months to view all upcoming and past episodes.
+                    </p>
                 </motion.div>
 
                 {/* Calendar Controls */}
-                <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex items-center justify-between">
-                    <button
-                        onClick={prevMonth}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                        <ChevronLeft className="w-6 h-6" />
-                    </button>
-
-                    <div className="flex items-center gap-4">
-                        <h2 className="text-xl font-semibold text-gray-900">
-                            {formatMonth(currentDate)}
-                        </h2>
+                <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+                    <div className="flex items-center justify-between mb-4">
                         <button
-                            onClick={goToToday}
-                            className="px-3 py-1 text-sm bg-maroon-100 text-maroon-700 rounded-full hover:bg-maroon-200 transition-colors"
+                            onClick={prevMonth}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         >
-                            Today
+                            <ChevronLeft className="w-6 h-6" />
+                        </button>
+
+                        <div className="flex items-center gap-4">
+                            <h2 className="text-xl font-semibold text-gray-900">
+                                {formatMonth(currentDate)}
+                            </h2>
+                            <button
+                                onClick={goToToday}
+                                className="px-3 py-1 text-sm bg-maroon-100 text-maroon-700 rounded-full hover:bg-maroon-200 transition-colors"
+                            >
+                                Today
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={nextMonth}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                            <ChevronRight className="w-6 h-6" />
                         </button>
                     </div>
-
-                    <button
-                        onClick={nextMonth}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                        <ChevronRight className="w-6 h-6" />
-                    </button>
+                    
+                    {/* Month Stats */}
+                    <div className="text-center text-sm text-gray-600">
+                        Showing {podcasts.filter(p => {
+                            const d = new Date(p.scheduledDate);
+                            return d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear();
+                        }).length} episodes in this month
+                    </div>
                 </div>
 
                 {/* Calendar Grid */}

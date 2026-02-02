@@ -181,21 +181,31 @@ export const getAllPodcasts = async (req: AuthRequest, res: Response): Promise<v
         // Default: Include all fields including images
 
         // Build the query - if limitNum is 0, don't apply limit (return all)
-        // Add allowDiskUse to handle large datasets
+        // For unlimited queries (limit=0), fetch without sort to avoid memory limit, then sort in memory
         let podcastQuery = Podcast.find(query)
-            .select(Object.keys(selectFields).length > 0 ? selectFields : {})
-            .sort({ scheduledDate: -1, episodeNumber: -1 })
-            .allowDiskUse(true); // Fix: Allow disk use for large sorts
+            .select(Object.keys(selectFields).length > 0 ? selectFields : {});
 
-        // Only apply skip/limit if limitNum > 0
+        // Only apply sort, skip, limit if limitNum > 0 (paginated mode)
         if (limitNum > 0) {
-            podcastQuery = podcastQuery.skip(skip).limit(limitNum);
+            podcastQuery = podcastQuery
+                .sort({ scheduledDate: -1, episodeNumber: -1 })
+                .skip(skip)
+                .limit(limitNum);
         }
 
-        const [podcasts, total] = await Promise.all([
-            podcastQuery,
-            Podcast.countDocuments(query),
-        ]);
+        // Execute query
+        const podcasts = await podcastQuery.lean();
+        
+        // If unlimited (limitNum === 0), sort in memory after fetching
+        if (limitNum === 0 && podcasts.length > 0) {
+            podcasts.sort((a, b) => {
+                const dateCompare = new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime();
+                if (dateCompare !== 0) return dateCompare;
+                return b.episodeNumber - a.episodeNumber;
+            });
+        }
+        
+        const total = await Podcast.countDocuments(query);
 
         console.log(`✅ Returning ${podcasts.length} podcasts from database (total: ${total})`);
 

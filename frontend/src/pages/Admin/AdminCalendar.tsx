@@ -157,55 +157,57 @@ export default function AdminCalendar() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Tab Navigation - Fixed height to prevent layout shifts */}
-                <div className="flex space-x-4 mb-8" style={{ minHeight: '52px' }}>
-                    <Link
-                        to="/admin/dashboard?tab=podcasts"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Mic className="w-5 h-5" />
-                        Podcasts
-                    </Link>
-                    <Link
-                        to="/admin/dashboard?tab=blogs"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <FileText className="w-5 h-5" />
-                        Blogs
-                    </Link>
-                    <div className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-maroon-700 text-white">
-                        <CalendarIcon className="w-5 h-5" />
-                        Calendar
+                {/* Tab Navigation - Scrollable on small screens */}
+                <div className="overflow-x-auto mb-8">
+                    <div className="flex space-x-2 min-w-max">
+                        <Link
+                            to="/admin/dashboard?tab=podcasts"
+                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
+                        >
+                            <Mic className="w-5 h-5" />
+                            Podcasts
+                        </Link>
+                        <Link
+                            to="/admin/dashboard?tab=blogs"
+                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
+                        >
+                            <FileText className="w-5 h-5" />
+                            Blogs
+                        </Link>
+                        <div className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-maroon-700 text-white whitespace-nowrap">
+                            <CalendarIcon className="w-5 h-5" />
+                            Calendar
+                        </div>
+                        <Link
+                            to="/admin/dashboard?tab=inbox"
+                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
+                        >
+                            <Mail className="w-5 h-5" />
+                            Inbox
+                        </Link>
+                        <Link
+                            to="/admin/dashboard?tab=import"
+                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
+                        >
+                            <Upload className="w-5 h-5" />
+                            Import
+                        </Link>
+                        <Link
+                            to="/admin/dashboard?tab=about"
+                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
+                            title="Manage About Us Content"
+                        >
+                            <FileText className="w-5 h-5" />
+                            About Us
+                        </Link>
+                        <Link
+                            to="/admin/dashboard?tab=settings"
+                            className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50 whitespace-nowrap"
+                        >
+                            <Settings className="w-5 h-5" />
+                            Settings
+                        </Link>
                     </div>
-                    <Link
-                        to="/admin/dashboard?tab=inbox"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Mail className="w-5 h-5" />
-                        Inbox
-                    </Link>
-                    <Link
-                        to="/admin/dashboard?tab=import"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Upload className="w-5 h-5" />
-                        Import
-                    </Link>
-                    <Link
-                        to="/admin/dashboard?tab=about"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                        title="Manage About Us Content"
-                    >
-                        <FileText className="w-5 h-5" />
-                        About Us
-                    </Link>
-                    <Link
-                        to="/admin/dashboard?tab=settings"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Settings className="w-5 h-5" />
-                        Settings
-                    </Link>
                 </div>
                 
                 {/* Content wrapper with fixed height to prevent jumping */}
@@ -221,12 +223,38 @@ export default function AdminCalendar() {
                         <div className="bg-white rounded-xl shadow-sm">
                             {/* Header */}
                             <div className="p-6 border-b">
-                                <h2 className="text-lg font-bold text-gray-900">Podcast Calendar</h2>
-                                <p className="text-sm text-gray-500">View all {podcasts.length} podcast episodes by date</p>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-lg font-bold text-gray-900">Podcast Calendar</h2>
+                                        <p className="text-sm text-gray-500">
+                                            Showing {podcasts.filter(p => {
+                                                const d = new Date(p.scheduledDate);
+                                                return d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear();
+                                            }).length} episodes in {formatMonth(currentDate)} (Total: {podcasts.length} episodes loaded)
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                            {podcasts.filter(p => new Date(p.scheduledDate) > new Date()).length} Upcoming
+                                        </span>
+                                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                                            {podcasts.filter(p => new Date(p.scheduledDate) <= new Date()).length} Past
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Calendar Content */}
                             <div className="p-6">
+                                {/* Info Banner */}
+                                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-sm text-blue-800">
+                                        <strong>📅 All {podcasts.length} podcasts loaded!</strong> Navigate through months using the arrows to see all episodes. 
+                                        {podcasts.filter(p => new Date(p.scheduledDate) > new Date()).length > 0 && (
+                                            <> You have {podcasts.filter(p => new Date(p.scheduledDate) > new Date()).length} upcoming episodes scheduled.</>
+                                        )}
+                                    </p>
+                                </div>
 
                                 {/* Calendar Controls */}
                                 <div className="flex items-center justify-between mb-6">

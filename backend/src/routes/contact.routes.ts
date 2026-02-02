@@ -63,12 +63,14 @@ router.get('/messages', authenticateToken, async (req, res) => {
 
         const skip = (Number(page) - 1) * Number(limit);
 
-        const [messages, total, unreadCount] = await Promise.all([
-            ContactMessage.find(query)
-                .sort({ createdAt: -1 })
-                .allowDiskUse(true)
-                .skip(skip)
-                .limit(Number(limit)),
+        const cursor = ContactMessage.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(Number(limit))
+            .cursor({ allowDiskUse: true });
+        
+        const messages = await cursor.toArray();
+        const [total, unreadCount] = await Promise.all([
             ContactMessage.countDocuments(query),
             ContactMessage.countDocuments({ status: 'unread' }),
         ]);
