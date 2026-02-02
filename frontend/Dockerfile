@@ -1,6 +1,4 @@
 # Frontend Dockerfile for Business Talk
-
-# Build stage
 FROM node:18-alpine AS builder
 
 # Set working directory
@@ -9,8 +7,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci && npm cache clean --force
+# Install dependencies using npm install
+RUN npm install && npm cache clean --force
 
 # Copy all frontend files
 COPY . .

@@ -1,7 +1,8 @@
 # Backend Dockerfile for Business Talk
+FROM node:18-alpine
 
-# Use official Node.js LTS image
-FROM node:18-alpine AS builder
+# Install build dependencies for native modules (sharp, etc.)
+RUN apk add --no-cache python3 make g++
 
 # Set working directory
 WORKDIR /app
@@ -9,8 +10,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install dependencies using npm install (more forgiving than npm ci)
+RUN npm install --production=false && npm cache clean --force
 
 # Copy TypeScript config and source code
 COPY tsconfig.json ./
@@ -19,20 +20,9 @@ COPY src ./src
 # Build TypeScript
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
-
-# Copy built files from builder
-COPY --from=builder /app/dist ./dist
+# Remove dev dependencies and source files to reduce image size
+RUN npm prune --production && \
+    rm -rf src tsconfig.json
 
 # Create uploads directory
 RUN mkdir -p uploads
@@ -44,5 +34,5 @@ ENV NODE_ENV=production
 EXPOSE 5000
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]
 
