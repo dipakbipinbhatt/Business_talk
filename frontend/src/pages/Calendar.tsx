@@ -15,9 +15,10 @@ export default function Calendar() {
 
     const fetchPodcasts = async () => {
         try {
-            // Fetch ALL podcasts (no limit) to show all past and future
-            const response = await podcastAPI.getAll({ limit: 1000 });
+            // Fetch ALL podcasts for calendar (limit: 0 means unlimited)
+            const response = await podcastAPI.getAll({ limit: 0 });
             setPodcasts(response.data.podcasts);
+            console.log(`📅 Public Calendar loaded ${response.data.podcasts.length} podcasts`);
         } catch (error) {
             console.error('Error fetching podcasts:', error);
         } finally {
