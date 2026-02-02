@@ -56,34 +56,63 @@ export default function Podcasts() {
         setError(null);
         setPage(1);
         try {
-            // UNLIMITED - Fetch ALL past podcasts
-            console.log(`[Podcasts] Fetching ALL past podcasts (unlimited)`);
+            // Use same initial load as Home page
+            const limit = settings.pastInitialLoad;
+            console.log(`[Podcasts] Fetching past podcasts - page 1, limit ${limit}`);
             const response = await podcastAPI.getAll({
                 category: 'past',
-                limit: 0, // 0 = unlimited
+                limit,
                 page: 1,
                 search: query,
+                // Note: thumbnailImage is included to show uploaded promotional images
             });
 
             const newPodcasts = response.data.podcasts || [];
             setPodcasts(newPodcasts);
             console.log(`[Podcasts] Got ${newPodcasts.length}/${response.data.pagination?.total} past podcasts`);
 
-            // No more pagination needed - we have everything
-            setHasMore(false);
+            // If we got fewer than limit, we reached the end
+            setHasMore(newPodcasts.length >= limit && response.data.pagination.page < response.data.pagination.pages);
         } catch (err) {
             console.error('[Podcasts] Error fetching podcasts:', err);
             setError('Failed to load podcasts. Please try again later.');
         } finally {
             setIsLoading(false);
         }
-    }, [settingsLoaded]);
+    }, [settingsLoaded, settings.pastInitialLoad]);
 
-    // Load More - DISABLED (we load everything at once now)
+    // Load More fetch - ONLY PAST episodes - same batch size as Home page
     const loadMoreItems = useCallback(async () => {
-        // No longer needed - we load all podcasts at once
-        return;
-    }, []);
+        if (isLoadingMore || !hasMore) return;
+
+        setIsLoadingMore(true);
+        try {
+            const nextPage = page + 1;
+            const limit = settings.pastBatchSize; // Use same batch size as Home page
+            console.log(`[Podcasts] Loading more past - page ${nextPage}, limit ${limit}`);
+
+            // IMPORTANT: Only fetch PAST episodes - upcoming should NOT appear here
+            const response = await podcastAPI.getAll({
+                category: 'past',
+                limit,
+                page: nextPage,
+                search: searchTerm,
+                // Note: thumbnailImage is included to show uploaded promotional images
+            });
+
+            const newPodcasts = response.data.podcasts || [];
+            setPodcasts(prev => [...prev, ...newPodcasts]);
+            setPage(nextPage);
+            console.log(`[Podcasts] Added ${newPodcasts.length} more past podcasts`);
+
+            setHasMore(newPodcasts.length === limit && response.data.pagination.page < response.data.pagination.pages);
+        } catch (err) {
+            console.error('[Podcasts] Error loading more podcasts:', err);
+            // Don't set main error, just stop loading more
+        } finally {
+            setIsLoadingMore(false);
+        }
+    }, [page, hasMore, searchTerm, isLoadingMore, settings.pastBatchSize]);
 
     // Debounce search
     useEffect(() => {
