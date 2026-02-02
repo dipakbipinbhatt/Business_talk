@@ -1,0 +1,53 @@
+{
+  "name": "business-talk-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Business Talk Podcast Platform",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "update-podcasts": "tsx src/scripts/updatePodcastData.ts",
+    "clear-data": "tsx src/clear-data.ts",
+    "seed-blogs": "tsx src/scripts/seedBlogs.ts",
+    "import-podcasts": "tsx src/import-podcasts.ts"
+  },
+  "keywords": [
+    "podcast",
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
+  "author": "Business Talk",
+  "license": "MIT",
+  "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/multer": "^1.4.11",
+    "@types/node": "^20.10.5",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.22.0",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^7.0.13",
+    "sharp": "^0.34.5",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "urllib": "^3.27.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/mongoose": "^5.11.96"
+  }
+}

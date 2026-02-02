@@ -1,0 +1,132 @@
+================================================================================
+MONGODB ATLAS CLUSTER FIX - QUICK COMMANDS
+================================================================================
+
+PROBLEM: Admin dashboard shows "MongoDB Atlas credentials are not configured"
+
+================================================================================
+LOCAL (Windows) - Push Changes
+================================================================================
+
+git push origin main
+
+================================================================================
+EC2 - Deploy Fix (Run these commands in order)
+================================================================================
+
+# 1. SSH to EC2
+ssh -i your-key.pem ubuntu@your-ec2-ip
+
+# 2. Navigate to project
+cd ~/Business_talk
+# OR: cd /var/www/Business_talk
+# OR: cd /home/ubuntu/Business_talk
+
+# 3. Pull changes
+git pull origin main
+
+# 4. Run fix script
+chmod +x fix-ec2-mongodb.sh
+./fix-ec2-mongodb.sh
+
+# 5. Verify
+curl http://localhost:5000/api/mongodb/clusters
+
+================================================================================
+ALTERNATIVE - Manual Fix (if script fails)
+================================================================================
+
+# Copy .env to backend
+cp .env backend/.env
+
+# Rebuild backend
+cd backend
+npm run build
+
+# Restart service (choose one)
+pm2 restart backend              # If using PM2
+docker-compose restart backend   # If using Docker
+sudo systemctl restart business-talk-backend  # If using systemd
+
+# Test
+curl http://localhost:5000/api/mongodb/clusters
+
+================================================================================
+VERIFICATION
+================================================================================
+
+# Check credentials loaded
+node verify-mongodb-credentials.js
+
+# Check backend logs
+pm2 logs backend --lines 50
+
+# Check service status
+pm2 list
+
+# Test health
+curl http://localhost:5000/api/health
+
+# Test MongoDB API
+curl http://localhost:5000/api/mongodb/clusters
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+# If credentials not found:
+cat backend/.env | grep MONGO_PUBLIC_KEY
+
+# If backend not responding:
+pm2 restart backend
+
+# If still errors:
+pm2 delete backend
+cd backend
+npm run build
+pm2 start dist/index.js --name backend
+
+# Check logs for errors:
+pm2 logs backend
+
+================================================================================
+SUCCESS INDICATORS
+================================================================================
+
+✅ Script completes without errors
+✅ curl returns JSON with cluster data (not error)
+✅ Admin dashboard shows cluster information
+✅ No errors in pm2 logs
+
+================================================================================
+EXPECTED API RESPONSE (Success)
+================================================================================
+
+{
+  "results": [
+    {
+      "name": "Cluster0",
+      "mongoDBVersion": "8.0.3",
+      "stateName": "IDLE"
+    }
+  ]
+}
+
+================================================================================
+YOUR CREDENTIALS (in backend/.env)
+================================================================================
+
+MONGO_PUBLIC_KEY=kyrqqzvy
+MONGO_PRIVATE_KEY=abe712c0-3510-4ff1-a14e-fd7ccf136b42
+MONGO_PROJECT_ID=694a5e0e68931519b60fffac
+
+================================================================================
+ESTIMATED TIME: 5 minutes
+RISK LEVEL: Low (backward compatible)
+================================================================================
+
+For detailed guide, see: EC2_MONGODB_CLUSTER_FIX.md
+For checklist, see: MONGODB_FIX_CHECKLIST.md
+For all docs, see: MONGODB_FIX_INDEX.md
+
+================================================================================

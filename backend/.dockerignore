@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+.env
+.env.local
+.env.production
+.git
+.gitignore
+*.md
+dist
+uploads/*.jpg
+uploads/*.png
+.DS_Store
+*.log
+coverage
+.nyc_output
+

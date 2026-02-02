@@ -1,0 +1,18 @@
+node_modules
+.git
+.gitignore
+*.md
+.env
+.env.local
+.env.production
+*.log
+.DS_Store
+coverage
+.nyc_output
+dist
+*.zip
+*.pdf
+*.docx
+*.mp4
+New folder (7)
+
