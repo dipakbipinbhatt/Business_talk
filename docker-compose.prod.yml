@@ -1,4 +1,5 @@
-# Production Docker Compose Configuration with additional optimizations
+# Production Docker Compose Configuration
+# Uses centralized .env file at root for all services
 
 version: "3.8"
 
@@ -13,13 +14,27 @@ services:
       - .env
     environment:
       NODE_ENV: production
-      PORT: 5000
+      PORT: ${PORT:-5000}
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      FRONTEND_URL: ${FRONTEND_URL}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:
       - ./backend/uploads:/app/uploads
     ports:
       - "5000:5000"
     networks:
       - business-talk-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     deploy:
       resources:
         limits:
@@ -38,17 +53,30 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
     container_name: business-talk-frontend
     restart: always
+    env_file:
+      - .env
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - business-talk-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     deploy:
       resources:
         limits:

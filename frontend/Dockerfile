@@ -4,6 +4,10 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
+# Accept build argument for API URL
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Copy package files
 COPY package*.json ./
 
@@ -13,7 +17,7 @@ RUN npm install && npm cache clean --force
 # Copy all frontend files
 COPY . .
 
-# Build the application
+# Build the application with environment variables
 RUN npm run build
 
 # Production stage with Nginx
