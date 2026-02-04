@@ -43,7 +43,7 @@ app.use(cors({
         }
 
         // Allow EC2 IP address (with or without protocol)
-        if (origin.includes('13.234.32.101')) {
+        if (origin.includes('13.234.32.101') || origin.includes('68.178.161.128')) {
             return callback(null, true);
         }
 
