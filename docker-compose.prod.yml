@@ -1,6 +1,6 @@
 # Production Docker Compose Configuration with additional optimizations
 
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
@@ -23,10 +23,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 512M
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 256M
     logging:
       driver: "json-file"
@@ -43,8 +43,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
     networks:
@@ -52,10 +50,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
     logging:
       driver: "json-file"
