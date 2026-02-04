@@ -283,6 +283,17 @@ curl https://businesstalkwithdeepakbhatt.com
 
 ## Troubleshooting
 
+### Issue: ERR_QUIC_PROTOCOL_ERROR (Chrome)
+
+**Cause**: Server is advertising HTTP/3 (QUIC) support but UDP port 443 is blocked by firewall.
+
+**Solution**:
+1. Edit Nginx config: `/etc/nginx/sites-available/business-talk`
+2. Remove any `listen 443 quic;` or `http3` directives.
+3. Ensure no `Alt-Svc` header is being added.
+4. Restart Nginx: `systemctl restart nginx`
+5. **CRITICAL**: Test in Incognito mode first, as Chrome caches the broken protocol.
+
 ### Issue: Admin panel still shows error
 
 **Solution 1**: Clear browser cache
