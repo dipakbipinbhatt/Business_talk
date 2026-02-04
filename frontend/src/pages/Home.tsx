@@ -74,10 +74,15 @@ export default function Home() {
                     limit: settings.upcomingInitialLoad,
                     page: 1
                 });
-                setUpcomingPodcasts(response.data.podcasts || []);
+                const podcasts = response.data.podcasts || [];
+                // Remove duplicates
+                const uniquePodcasts = podcasts.filter((podcast: Podcast, index: number, self: Podcast[]) =>
+                    index === self.findIndex((p: Podcast) => p._id === podcast._id)
+                );
+                setUpcomingPodcasts(uniquePodcasts);
                 setUpcomingTotal(response.data.pagination?.total || 0);
                 setUpcomingPage(1);
-                console.log(`[Home] Got ${response.data.podcasts?.length}/${response.data.pagination?.total} upcoming podcasts`);
+                console.log(`[Home] Got ${uniquePodcasts.length}/${response.data.pagination?.total} upcoming podcasts (removed ${podcasts.length - uniquePodcasts.length} duplicates)`);
             } catch (err) {
                 console.error('[Home] Error fetching upcoming podcasts:', err);
             } finally {
@@ -103,7 +108,13 @@ export default function Home() {
                 page: nextPage
             });
             const newPodcasts = response.data.podcasts || [];
-            setUpcomingPodcasts(prev => [...prev, ...newPodcasts]);
+            // Merge and remove duplicates
+            setUpcomingPodcasts(prev => {
+                const combined = [...prev, ...newPodcasts];
+                return combined.filter((podcast: Podcast, index: number, self: Podcast[]) =>
+                    index === self.findIndex((p: Podcast) => p._id === podcast._id)
+                );
+            });
             setUpcomingPage(nextPage);
             console.log(`[Home] Added ${newPodcasts.length} more upcoming podcasts`);
         } catch (err) {
@@ -151,10 +162,15 @@ export default function Home() {
                     page: 1
                     // Note: thumbnailImage is included to show uploaded promotional images
                 });
-                setPastPodcasts(response.data.podcasts || []);
+                const podcasts = response.data.podcasts || [];
+                // Remove duplicates
+                const uniquePodcasts = podcasts.filter((podcast: Podcast, index: number, self: Podcast[]) =>
+                    index === self.findIndex((p: Podcast) => p._id === podcast._id)
+                );
+                setPastPodcasts(uniquePodcasts);
                 setPastTotal(response.data.pagination?.total || 0);
                 setPastPage(1);
-                console.log(`[Home] Got ${response.data.podcasts?.length}/${response.data.pagination?.total} past podcasts`);
+                console.log(`[Home] Got ${uniquePodcasts.length}/${response.data.pagination?.total} past podcasts (removed ${podcasts.length - uniquePodcasts.length} duplicates)`);
             } catch (err) {
                 console.error('[Home] Error fetching past podcasts:', err);
                 setError('Failed to load podcasts. Please try again later.');
@@ -182,7 +198,13 @@ export default function Home() {
                 // Note: thumbnailImage is included to show uploaded promotional images
             });
             const newPodcasts = response.data.podcasts || [];
-            setPastPodcasts(prev => [...prev, ...newPodcasts]);
+            // Merge and remove duplicates
+            setPastPodcasts(prev => {
+                const combined = [...prev, ...newPodcasts];
+                return combined.filter((podcast: Podcast, index: number, self: Podcast[]) =>
+                    index === self.findIndex((p: Podcast) => p._id === podcast._id)
+                );
+            });
             setPastPage(nextPage);
             console.log(`[Home] Added ${newPodcasts.length} more past podcasts`);
         } catch (err) {

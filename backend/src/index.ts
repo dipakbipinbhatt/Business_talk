@@ -18,6 +18,7 @@ import mongoRoutes from './routes/mongodb.routes';
 import settingsRoutes from './routes/settings.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import contactRoutes from './routes/contact.routes';
+import excelRoutes from './routes/excel.routes';
 
 const app = express();
 
@@ -53,7 +54,7 @@ app.use(cors({
 
         // Allow configured frontend URL (if set)
         if (config.cors.frontendUrl && config.cors.frontendUrl !== 'http://localhost:5173') {
-            if (origin === config.cors.frontendUrl || 
+            if (origin === config.cors.frontendUrl ||
                 origin.replace(/^https?:\/\//, '') === config.cors.frontendUrl.replace(/^https?:\/\//, '')) {
                 return callback(null, true);
             }
@@ -178,6 +179,7 @@ app.use('/api/mongodb', mongoRoutes); // Added mongodb routes
 app.use('/api/settings', settingsRoutes); // Site settings routes
 app.use('/api/analytics', analyticsRoutes); // Analytics routes
 app.use('/api/contact', contactRoutes); // Contact form routes
+app.use('/api/excel', excelRoutes); // Excel export routes
 
 // 404 handler
 app.use((_req, res) => {

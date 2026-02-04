@@ -31,9 +31,10 @@ import {
     Database,
     ExternalLink,
     Mail,
-    MailOpen
+    MailOpen,
+    Download
 } from 'lucide-react';
-import { podcastAPI, blogAPI, Blog, importAPI, aboutUsAPI, AboutUsContent, renderAPI, systemHealthAPI, settingsAPI, SiteSettings, mongoAPI, contactAPI, ContactMessage, ContactStats } from '../../services/api';
+import { podcastAPI, blogAPI, Blog, importAPI, aboutUsAPI, AboutUsContent, renderAPI, systemHealthAPI, settingsAPI, SiteSettings, mongoAPI, contactAPI, ContactMessage, ContactStats, excelAPI } from '../../services/api';
 import { useAuthStore, usePodcastStore } from '../../store/useStore';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -657,6 +658,33 @@ export default function AdminDashboard() {
         }
     }, [activeTab]);
 
+    // Excel Export Handler
+    const handleExportToExcel = async () => {
+        try {
+            const response = await excelAPI.exportPodcasts();
+
+            // Create blob from response
+            const blob = new Blob([response.data], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Business_Talk_Podcasts_${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error exporting to Excel:', error);
+            alert('Failed to export podcasts to Excel');
+        }
+    };
+
     // Calculate total pages from server counts (podcasts are already paginated from server)
     const totalPodcastPages = Math.ceil(totalPodcastCount / ITEMS_PER_PAGE);
     const totalBlogPages = Math.ceil(totalBlogCount / ITEMS_PER_PAGE);
@@ -785,67 +813,1068 @@ export default function AdminDashboard() {
 
                 {/* Content wrapper with fixed height to prevent jumping */}
                 <div className="relative" style={{ minHeight: '800px' }}>
-                {/* Podcasts Tab */}
-                {activeTab === 'podcasts' && (
-                    <div className="tab-content-wrapper">
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-maroon-100 rounded-xl flex items-center justify-center">
-                                        <BarChart3 className="w-6 h-6 text-maroon-700" />
+                    {/* Podcasts Tab */}
+                    {activeTab === 'podcasts' && (
+                        <div className="tab-content-wrapper">
+                            {/* Stats Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-maroon-100 rounded-xl flex items-center justify-center">
+                                            <BarChart3 className="w-6 h-6 text-maroon-700" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500">Total Episodes</p>
+                                            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Total Episodes</p>
-                                        <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                            <Calendar className="w-6 h-6 text-green-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500">Upcoming</p>
+                                            <p className="text-2xl font-bold text-gray-900">{stats.upcoming}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                            <Clock className="w-6 h-6 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500">Published</p>
+                                            <p className="text-2xl font-bold text-gray-900">{stats.past}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                                        <Calendar className="w-6 h-6 text-green-600" />
+                            {/* Podcasts Section */}
+                            <div className="bg-white rounded-xl shadow-sm">
+                                {/* Header */}
+                                <div className="p-6 border-b flex flex-col gap-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div>
+                                            <h2 className="text-lg font-bold text-gray-900">All Podcasts</h2>
+                                            <p className="text-sm text-gray-500">
+                                                Showing {podcasts.length} of {totalPodcastCount} podcasts
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center space-x-4">
+                                            {/* Filter */}
+                                            <div className="flex items-center space-x-2">
+                                                {(['all', 'upcoming', 'past'] as const).map((f) => (
+                                                    <button
+                                                        key={f}
+                                                        onClick={() => { setFilter(f); setPodcastPage(1); }}
+                                                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${filter === f
+                                                            ? 'bg-maroon-700 text-white'
+                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                            }`}
+                                                    >
+                                                        {f.charAt(0).toUpperCase() + f.slice(1)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <button
+                                                onClick={handleExportToExcel}
+                                                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                <span>Export Excel</span>
+                                            </button>
+                                            <Link
+                                                to="/admin/podcast/new"
+                                                className="flex items-center space-x-2 px-4 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                <span>Add Podcast</span>
+                                            </Link>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Upcoming</p>
-                                        <p className="text-2xl font-bold text-gray-900">{stats.upcoming}</p>
+                                    {/* Search Bar */}
+                                    <div className="relative max-w-md">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search by title, guest, episode #..."
+                                            value={podcastSearch}
+                                            onChange={(e) => { setPodcastSearch(e.target.value); setPodcastPage(1); }}
+                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* List */}
+                                <div className="divide-y">
+                                    {isLoading ? (
+                                        <div className="p-12 text-center">
+                                            <Loader2 className="w-8 h-8 animate-spin text-maroon-700 mx-auto" />
+                                            <p className="text-gray-500 mt-2">Loading podcasts...</p>
+                                        </div>
+                                    ) : podcasts.length === 0 ? (
+                                        <div className="p-12 text-center">
+                                            <p className="text-gray-500">{podcastSearch ? 'No podcasts match your search.' : 'No podcasts found.'}</p>
+                                            {!podcastSearch && (
+                                                <Link
+                                                    to="/admin/podcast/new"
+                                                    className="inline-flex items-center space-x-2 mt-4 text-maroon-700 hover:text-maroon-800"
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                    <span>Create your first podcast</span>
+                                                </Link>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        podcasts.map((podcast) => (
+                                            <div
+                                                key={podcast._id}
+                                                className="p-6 hover:bg-gray-50 transition-colors"
+                                            >
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2 mb-2">
+                                                            <span className="text-sm font-bold text-maroon-700">
+                                                                #{podcast.episodeNumber}
+                                                            </span>
+                                                            <span
+                                                                className={`badge ${podcast.category === 'upcoming'
+                                                                    ? 'badge-upcoming'
+                                                                    : 'badge-past'
+                                                                    }`}
+                                                            >
+                                                                {podcast.category}
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="font-semibold text-gray-900 mb-1">
+                                                            {podcast.title}
+                                                        </h3>
+                                                        <p className="text-sm text-gray-500 mb-2">
+                                                            Guest: {podcast.guestName} • {podcast.guestTitle}
+                                                        </p>
+                                                        <p className="text-sm text-gray-400">
+                                                            {formatDate(podcast.scheduledDate)} • {podcast.scheduledTime}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Link
+                                                            to={`/admin/podcast/edit/${podcast._id}`}
+                                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        >
+                                                            <Edit className="w-5 h-5" />
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => handleDeletePodcast(podcast._id)}
+                                                            disabled={deleteId === podcast._id}
+                                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                                        >
+                                                            {deleteId === podcast._id ? (
+                                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-5 h-5" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Pagination Controls */}
+                                {totalPodcastPages > 1 && (
+                                    <div className="p-4 border-t flex items-center justify-between">
+                                        <span className="text-sm text-gray-600">
+                                            Page {podcastPage} of {totalPodcastPages}
+                                        </span>
+                                        <div className="flex items-center space-x-2">
+                                            <button
+                                                onClick={() => setPodcastPage(p => Math.max(1, p - 1))}
+                                                disabled={podcastPage === 1}
+                                                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                            >
+                                                <ChevronLeft className="w-4 h-4" />
+                                                <span>Previous</span>
+                                            </button>
+                                            {/* Page numbers */}
+                                            <div className="hidden sm:flex items-center space-x-1">
+                                                {Array.from({ length: Math.min(5, totalPodcastPages) }, (_, i) => {
+                                                    let pageNum;
+                                                    if (totalPodcastPages <= 5) {
+                                                        pageNum = i + 1;
+                                                    } else if (podcastPage <= 3) {
+                                                        pageNum = i + 1;
+                                                    } else if (podcastPage >= totalPodcastPages - 2) {
+                                                        pageNum = totalPodcastPages - 4 + i;
+                                                    } else {
+                                                        pageNum = podcastPage - 2 + i;
+                                                    }
+                                                    return (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => setPodcastPage(pageNum)}
+                                                            className={`w-8 h-8 text-sm font-medium rounded-lg transition-colors ${podcastPage === pageNum
+                                                                ? 'bg-maroon-700 text-white'
+                                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                }`}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <button
+                                                onClick={() => setPodcastPage(p => Math.min(totalPodcastPages, p + 1))}
+                                                disabled={podcastPage === totalPodcastPages}
+                                                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                            >
+                                                <span>Next</span>
+                                                <ChevronRight className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Blogs Tab */}
+                    {activeTab === 'blogs' && (
+                        <div className="tab-content-wrapper">
+                            {/* Stats Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-maroon-100 rounded-xl flex items-center justify-center">
+                                            <FileText className="w-6 h-6 text-maroon-700" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500">Total Blogs</p>
+                                            <p className="text-2xl font-bold text-gray-900">{blogStats.total}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                            <Eye className="w-6 h-6 text-green-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500">Published</p>
+                                            <p className="text-2xl font-bold text-gray-900">{blogStats.published}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+                                            <EyeOff className="w-6 h-6 text-yellow-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500">Drafts</p>
+                                            <p className="text-2xl font-bold text-gray-900">{blogStats.drafts}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
+                            {/* Blogs Section */}
+                            <div className="bg-white rounded-xl shadow-sm">
+                                {/* Header */}
+                                <div className="p-6 border-b flex flex-col gap-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div>
+                                            <h2 className="text-lg font-bold text-gray-900">All Blogs</h2>
+                                            <p className="text-sm text-gray-500">
+                                                Showing {blogs.length} of {totalBlogCount} blogs
+                                            </p>
+                                        </div>
+                                        <Link
+                                            to="/admin/blog/new"
+                                            className="flex items-center space-x-2 px-4 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            <span>Add Blog</span>
+                                        </Link>
+                                    </div>
+                                    {/* Search Bar */}
+                                    <div className="relative max-w-md">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Search by title, category, author..."
+                                            value={blogSearch}
+                                            onChange={(e) => { setBlogSearch(e.target.value); setBlogPage(1); }}
+                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* List */}
+                                <div className="divide-y">
+                                    {blogsLoading ? (
+                                        <div className="p-12 text-center">
+                                            <Loader2 className="w-8 h-8 animate-spin text-maroon-700 mx-auto" />
+                                            <p className="text-gray-500 mt-2">Loading blogs...</p>
+                                        </div>
+                                    ) : blogs.length === 0 ? (
+                                        <div className="p-12 text-center">
+                                            <p className="text-gray-500">{blogSearch ? 'No blogs match your search.' : 'No blogs found.'}</p>
+                                            {!blogSearch && (
+                                                <Link
+                                                    to="/admin/blog/new"
+                                                    className="inline-flex items-center space-x-2 mt-4 text-maroon-700 hover:text-maroon-800"
+                                                >
+                                                    <Plus className="w-4 h-4" />
+                                                    <span>Create your first blog post</span>
+                                                </Link>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        blogs.map((blog) => (
+                                            <div
+                                                key={blog._id}
+                                                className="p-6 hover:bg-gray-50 transition-colors"
+                                            >
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2 mb-2">
+                                                            <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded">
+                                                                {blog.category}
+                                                            </span>
+                                                            {blog.isPublished ? (
+                                                                <span className="flex items-center gap-1 text-xs text-green-600">
+                                                                    <Eye className="w-3 h-3" /> Published
+                                                                </span>
+                                                            ) : (
+                                                                <span className="flex items-center gap-1 text-xs text-yellow-600">
+                                                                    <EyeOff className="w-3 h-3" /> Draft
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <h3 className="font-semibold text-gray-900 mb-1">
+                                                            {blog.title}
+                                                        </h3>
+                                                        <p className="text-sm text-gray-500 mb-2 line-clamp-1">
+                                                            {blog.excerpt}
+                                                        </p>
+                                                        <p className="text-sm text-gray-400">
+                                                            By {blog.author} • {formatDate(blog.createdAt)} • {blog.readTime}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <Link
+                                                            to={`/admin/blog/edit/${blog._id}`}
+                                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        >
+                                                            <Edit className="w-5 h-5" />
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => handleDeleteBlog(blog._id)}
+                                                            disabled={deleteId === blog._id}
+                                                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                                        >
+                                                            {deleteId === blog._id ? (
+                                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-5 h-5" />
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Pagination Controls */}
+                                {totalBlogPages > 1 && (
+                                    <div className="p-4 border-t flex items-center justify-between">
+                                        <span className="text-sm text-gray-600">
+                                            Page {blogPage} of {totalBlogPages}
+                                        </span>
+                                        <div className="flex items-center space-x-2">
+                                            <button
+                                                onClick={() => setBlogPage(p => Math.max(1, p - 1))}
+                                                disabled={blogPage === 1}
+                                                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                            >
+                                                <ChevronLeft className="w-4 h-4" />
+                                                <span>Previous</span>
+                                            </button>
+                                            {/* Page numbers */}
+                                            <div className="hidden sm:flex items-center space-x-1">
+                                                {Array.from({ length: Math.min(5, totalBlogPages) }, (_, i) => {
+                                                    let pageNum;
+                                                    if (totalBlogPages <= 5) {
+                                                        pageNum = i + 1;
+                                                    } else if (blogPage <= 3) {
+                                                        pageNum = i + 1;
+                                                    } else if (blogPage >= totalBlogPages - 2) {
+                                                        pageNum = totalBlogPages - 4 + i;
+                                                    } else {
+                                                        pageNum = blogPage - 2 + i;
+                                                    }
+                                                    return (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => setBlogPage(pageNum)}
+                                                            className={`w-8 h-8 text-sm font-medium rounded-lg transition-colors ${blogPage === pageNum
+                                                                ? 'bg-maroon-700 text-white'
+                                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                }`}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <button
+                                                onClick={() => setBlogPage(p => Math.min(totalBlogPages, p + 1))}
+                                                disabled={blogPage === totalBlogPages}
+                                                className="flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                            >
+                                                <span>Next</span>
+                                                <ChevronRight className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Import Tab */}
+                    {activeTab === 'import' && (
+                        <div className="tab-content-wrapper">
                             <div className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                        <Clock className="w-6 h-6 text-blue-600" />
+                                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                    <FileJson className="w-6 h-6 text-maroon-700" />
+                                    Import Podcasts
+                                </h2>
+
+                                {/* Sample JSON Format */}
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">JSON Format</h3>
+                                    <p className="text-gray-600 text-sm mb-3">
+                                        Paste a JSON array of podcasts to import. Each podcast should have the following fields:
+                                    </p>
+                                    <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                                        <pre className="text-sm font-mono whitespace-pre-wrap">{SAMPLE_JSON}</pre>
                                     </div>
+                                    <div className="flex gap-3 mt-3">
+                                        <button
+                                            onClick={handleCopySample}
+                                            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                            Copy Sample
+                                        </button>
+                                        <button
+                                            onClick={() => setJsonData(SAMPLE_JSON)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors"
+                                        >
+                                            Load Sample
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* File Upload */}
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Upload JSON File (optional)</h3>
+                                    <input
+                                        type="file"
+                                        accept=".json"
+                                        onChange={handleFileUpload}
+                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-maroon-700 file:text-white hover:file:bg-maroon-800"
+                                    />
+                                </div>
+
+                                {/* JSON Input */}
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Or paste JSON directly</h3>
+                                    <textarea
+                                        value={jsonData}
+                                        onChange={(e) => setJsonData(e.target.value)}
+                                        className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
+                                        placeholder="Paste your JSON here..."
+                                    />
+                                </div>
+
+                                {/* Error Message */}
+                                {importError && (
+                                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                                        <XCircle className="w-5 h-5" />
+                                        {importError}
+                                    </div>
+                                )}
+
+                                {/* Success Result */}
+                                {importResult && (
+                                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
+                                            <CheckCircle className="w-5 h-5" />
+                                            Import Complete
+                                        </div>
+                                        <p className="text-sm text-green-600">
+                                            Successfully imported {importResult.success} podcasts.
+                                            {importResult.failed > 0 && ` Failed: ${importResult.failed}`}
+                                        </p>
+                                        {importResult.errors.length > 0 && (
+                                            <ul className="mt-2 text-sm text-red-600 list-disc list-inside">
+                                                {importResult.errors.map((err, i) => (
+                                                    <li key={i}>{err}</li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Import Button */}
+                                <button
+                                    onClick={handleImport}
+                                    disabled={importLoading || !jsonData.trim()}
+                                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                >
+                                    {importLoading ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Importing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-5 h-5" />
+                                            Import Podcasts
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* About Us Tab */}
+                    {activeTab === 'about' && (
+                        <div className="tab-content-wrapper">
+                            <div className="bg-white rounded-xl shadow-sm p-6">
+                                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                    <Info className="w-6 h-6 text-maroon-700" />
+                                    Edit About Us Content
+                                </h2>
+
+                                {aboutLoading ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <Loader2 className="w-8 h-8 animate-spin text-maroon-700" />
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Title */}
+                                        <div className="mb-6">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Title
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={aboutContent.title}
+                                                onChange={(e) => setAboutContent(prev => ({ ...prev, title: e.target.value }))}
+                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
+                                            />
+                                        </div>
+
+                                        {/* Paragraphs */}
+                                        <div className="mb-6">
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Paragraphs
+                                            </label>
+                                            <div className="space-y-6">
+                                                {aboutContent.paragraphs.map((paragraph, index) => (
+                                                    <div key={index} className="relative">
+                                                        <div className="flex items-start gap-2">
+                                                            <span className="text-xs text-gray-500 mt-3 w-6">{index + 1}.</span>
+                                                            <div className="flex-1">
+                                                                <ReactQuill
+                                                                    theme="snow"
+                                                                    value={paragraph}
+                                                                    onChange={(value: string) => handleUpdateParagraph(index, value)}
+                                                                    modules={{
+                                                                        toolbar: [
+                                                                            [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                                                                            [{ 'font': ['serif', 'sans-serif', 'monospace', 'arial', 'times-new-roman', 'georgia', 'verdana', 'courier'] }],
+                                                                            [{ 'size': ['small', false, 'large', 'huge'] }],
+                                                                            ['bold', 'italic', 'underline', 'strike'],
+                                                                            [{ 'color': [] }, { 'background': [] }],
+                                                                            [{ 'script': 'sub' }, { 'script': 'super' }],
+                                                                            [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
+                                                                            [{ 'align': [] }],
+                                                                            ['blockquote', 'code-block'],
+                                                                            ['link', 'image', 'video'],
+                                                                            ['clean']
+                                                                        ]
+                                                                    }}
+                                                                    formats={[
+                                                                        'header', 'font', 'size',
+                                                                        'bold', 'italic', 'underline', 'strike',
+                                                                        'color', 'background',
+                                                                        'script',
+                                                                        'list', 'bullet', 'indent',
+                                                                        'align',
+                                                                        'blockquote', 'code-block',
+                                                                        'link', 'image', 'video'
+                                                                    ]}
+                                                                    className="bg-white rounded-lg"
+                                                                    placeholder={`Enter paragraph ${index + 1}...`}
+                                                                />
+                                                            </div>
+                                                            {aboutContent.paragraphs.length > 1 && (
+                                                                <button
+                                                                    onClick={() => handleRemoveParagraph(index)}
+                                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-1"
+                                                                    title="Remove paragraph"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <button
+                                                onClick={handleAddParagraph}
+                                                className="mt-4 flex items-center gap-2 px-4 py-2 text-maroon-700 border border-maroon-700 rounded-lg hover:bg-maroon-50 transition-colors"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                                Add Paragraph
+                                            </button>
+                                        </div>
+
+                                        {/* Error/Success Messages */}
+                                        {aboutError && (
+                                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                                                <XCircle className="w-5 h-5" />
+                                                {aboutError}
+                                            </div>
+                                        )}
+                                        {aboutSuccess && (
+                                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
+                                                <CheckCircle className="w-5 h-5" />
+                                                About Us content saved successfully!
+                                            </div>
+                                        )}
+
+                                        {/* Save Button */}
+                                        <button
+                                            onClick={handleSaveAbout}
+                                            disabled={aboutSaving}
+                                            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                        >
+                                            {aboutSaving ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="w-5 h-5" />
+                                                    Save Changes
+                                                </>
+                                            )}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Settings Tab */}
+                    {activeTab === 'settings' && (
+                        <div className="tab-content-wrapper">
+                            <div className="space-y-6">
+                                {/* System Health Section */}
+                                <div
+                                    className="bg-white rounded-xl shadow-sm p-6"
+                                >
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                            <Activity className="w-6 h-6 text-maroon-700" />
+                                            System Status
+                                        </h2>
+                                        <button
+                                            onClick={checkSystemHealth}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                            title="Refresh Status"
+                                        >
+                                            <RefreshCw className={`w-5 h-5 text-gray-600 ${healthLoading ? 'animate-spin' : ''}`} />
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <Server className="w-5 h-5 text-gray-600" />
+                                                <span className="font-medium text-gray-700">Backend API</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2.5 h-2.5 rounded-full ${systemHealth?.status === 'ok' ? 'bg-green-500' : 'bg-red-500'}`} />
+                                                <span className={`text-sm font-medium ${systemHealth?.status === 'ok' ? 'text-green-700' : 'text-red-700'}`}>
+                                                    {systemHealth?.status === 'ok' ? 'Operational' : 'Unreachable'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <Database className="w-5 h-5 text-gray-600" />
+                                                <span className="font-medium text-gray-700">Database</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2.5 h-2.5 rounded-full ${systemHealth?.database?.state === 'connected' ? 'bg-green-500' : 'bg-red-500'}`} />
+                                                <span className={`text-sm font-medium ${systemHealth?.database?.state === 'connected' ? 'text-green-700' : 'text-red-700'}`}>
+                                                    {systemHealth?.database?.state === 'connected' ? 'Connected' : 'Disconnected'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* MongoDB Atlas Cluster Status */}
+                                <div
+                                    className="bg-white rounded-xl shadow-sm p-6"
+                                >
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                            <Database className="w-6 h-6 text-green-600" />
+                                            MongoDB Atlas Cluster
+                                        </h2>
+                                        <button
+                                            onClick={fetchMongoCluster}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                            title="Refresh Cluster Status"
+                                        >
+                                            <RefreshCw className={`w-5 h-5 text-gray-600 ${mongoLoading ? 'animate-spin' : ''}`} />
+                                        </button>
+                                    </div>
+
+                                    {mongoLoading && !mongoCluster ? (
+                                        <div className="flex justify-center py-8">
+                                            <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+                                        </div>
+                                    ) : mongoCluster ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                                <p className="text-sm text-gray-500 mb-1">Cluster Name</p>
+                                                <p className="font-semibold text-gray-900">{mongoCluster.name}</p>
+                                            </div>
+                                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                                <p className="text-sm text-gray-500 mb-1">MongoDB Version</p>
+                                                <p className="font-semibold text-gray-900">{mongoCluster.mongoDBVersion}</p>
+                                            </div>
+                                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                                <p className="text-sm text-gray-500 mb-1">State</p>
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-2.5 h-2.5 rounded-full ${mongoCluster.stateName === 'IDLE' ? 'bg-green-500' : mongoCluster.stateName === 'CREATING' ? 'bg-yellow-500' : 'bg-red-500'}`} />
+                                                    <span className={`font-semibold ${mongoCluster.stateName === 'IDLE' ? 'text-green-700' : mongoCluster.stateName === 'CREATING' ? 'text-yellow-700' : 'text-red-700'}`}>
+                                                        {mongoCluster.stateName === 'IDLE' ? 'Running' : mongoCluster.stateName}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                                <p className="text-sm text-gray-500 mb-1">Region</p>
+                                                <p className="font-semibold text-gray-900">{mongoCluster.providerSettings?.regionName || 'N/A'}</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-gray-500">
+                                            <Database className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                            {mongoError ? (
+                                                <>
+                                                    <p className="text-red-600 font-medium">Error: {mongoError}</p>
+                                                    {mongoError.includes('401') && (
+                                                        <div className="mt-4 text-left bg-red-50 p-4 rounded text-sm text-gray-700">
+                                                            <p className="font-bold mb-2">How to fix 401 Unauthorized:</p>
+                                                            <ul className="list-disc pl-5 space-y-1">
+                                                                <li>Go to <a href="https://cloud.mongodb.com" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">MongoDB Atlas Dashboard</a></li>
+                                                                <li>Click <strong>Access Manager</strong> {'>'} <strong>Project Access</strong></li>
+                                                                <li>Find your API Key <strong>({(mongoCluster as any)?.publicKey || '...'})</strong></li>
+                                                                <li>Click <strong>Edit</strong> {'>'} <strong>Access List</strong></li>
+                                                                <li>Add Entry: <code>0.0.0.0/0</code> (Allow from anywhere)</li>
+                                                                <li>Save changes and wait 1 minute</li>
+                                                            </ul>
+                                                            <p className="mt-2 text-xs text-gray-500">Note: This is required because Render servers use dynamic IPs.</p>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <p>MongoDB Atlas credentials not configured or cluster unavailable.</p>
+                                                    <p className="text-sm mt-1">Configure MONGO_PUBLIC_KEY, MONGO_PRIVATE_KEY, and MONGO_PROJECT_ID in backend environment.</p>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+
+                                {/* Episode Loading Configuration */}
+                                <div
+                                    className="bg-white rounded-xl shadow-sm p-6"
+                                >
+                                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                        <BarChart3 className="w-6 h-6 text-blue-600" />
+                                        Episode Loading Configuration
+                                    </h2>
+                                    <p className="text-sm text-gray-500 mb-6">
+                                        Configure how many episodes are displayed initially and loaded on scroll for the home page.
+                                    </p>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Upcoming Episodes */}
+                                        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                                            <h3 className="font-semibold text-green-800 mb-4 flex items-center gap-2">
+                                                <Calendar className="w-5 h-5" />
+                                                Upcoming Episodes
+                                            </h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Initial Load
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="50"
+                                                        value={episodeSettings.upcomingInitialLoad}
+                                                        onChange={(e) => setEpisodeSettings(prev => ({
+                                                            ...prev,
+                                                            upcomingInitialLoad: parseInt(e.target.value) || 4
+                                                        }))}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                                    />
+                                                    <p className="text-xs text-gray-500 mt-1">Episodes on page load</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Scroll Batch
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="50"
+                                                        value={episodeSettings.upcomingBatchSize}
+                                                        onChange={(e) => setEpisodeSettings(prev => ({
+                                                            ...prev,
+                                                            upcomingBatchSize: parseInt(e.target.value) || 4
+                                                        }))}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                                    />
+                                                    <p className="text-xs text-gray-500 mt-1">Episodes per scroll</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Past Episodes */}
+                                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                            <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
+                                                <Clock className="w-5 h-5" />
+                                                Past Episodes
+                                            </h3>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Initial Load
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="50"
+                                                        value={episodeSettings.pastInitialLoad}
+                                                        onChange={(e) => setEpisodeSettings(prev => ({
+                                                            ...prev,
+                                                            pastInitialLoad: parseInt(e.target.value) || 4
+                                                        }))}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    />
+                                                    <p className="text-xs text-gray-500 mt-1">Episodes on page load</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Scroll Batch
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        max="50"
+                                                        value={episodeSettings.pastBatchSize}
+                                                        onChange={(e) => setEpisodeSettings(prev => ({
+                                                            ...prev,
+                                                            pastBatchSize: parseInt(e.target.value) || 6
+                                                        }))}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    />
+                                                    <p className="text-xs text-gray-500 mt-1">Episodes per scroll</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+                                {/* Google Analytics Configuration */}
+                                <div
+                                    className="bg-white rounded-xl shadow-sm p-6"
+                                >
+                                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                        <Activity className="w-6 h-6 text-orange-600" />
+                                        Google Analytics
+                                    </h2>
+                                    <p className="text-sm text-gray-500 mb-6">
+                                        Track website traffic and user behavior.
+                                    </p>
+
                                     <div>
-                                        <p className="text-sm text-gray-500">Published</p>
-                                        <p className="text-2xl font-bold text-gray-900">{stats.past}</p>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Measurement ID (G-XXXXXXXXXX)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={episodeSettings.googleAnalyticsId || ''}
+                                            onChange={(e) => setEpisodeSettings(prev => ({
+                                                ...prev,
+                                                googleAnalyticsId: e.target.value
+                                            }))}
+                                            placeholder="G-XXXXXXXXXX"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-2">
+                                            Enter your Google Analytics 4 Measurement ID to enable tracking.
+                                        </p>
                                     </div>
+                                </div>
+
+                                {/* Analytics Dashboard - Shows analytics data */}
+                                <AnalyticsDashboard measurementId={episodeSettings.googleAnalyticsId} />
+
+                                {/* MongoDB Configuration */}
+
+                                {/* Save Button with Error Display */}
+                                <div className="space-y-4">
+                                    {settingsError && (
+                                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                                            <XCircle className="w-5 h-5" />
+                                            {settingsError}
+                                        </div>
+                                    )}
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={saveSettings}
+                                            disabled={settingsSaving}
+                                            className="px-6 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {settingsSaving ? (
+                                                <>
+                                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : settingsSaved ? (
+                                                <>
+                                                    <CheckCircle className="w-5 h-5" />
+                                                    Saved!
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="w-5 h-5" />
+                                                    Save Configuration
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Recent Deployments */}
+                                <div className="space-y-6">
+                                    <DeploymentsTable deployments={frontendDeployments} title="Frontend" />
+                                    <DeploymentsTable deployments={backendDeployments} title="Backend" />
                                 </div>
                             </div>
                         </div>
+                    )
+                    }
 
-                        {/* Podcasts Section */}
-                        <div className="bg-white rounded-xl shadow-sm">
-                            {/* Header */}
-                            <div className="p-6 border-b flex flex-col gap-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                    <div>
-                                        <h2 className="text-lg font-bold text-gray-900">All Podcasts</h2>
-                                        <p className="text-sm text-gray-500">
-                                            Showing {podcasts.length} of {totalPodcastCount} podcasts
-                                        </p>
-                                    </div>
+                    {/* Inbox Tab */}
+                    {activeTab === 'inbox' && (
+                        <div className="tab-content-wrapper">
+                            {/* Stats Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                                <div className="bg-white rounded-xl shadow-sm p-6">
                                     <div className="flex items-center space-x-4">
-                                        {/* Filter */}
+                                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                            <Mail className="w-6 h-6 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500">Total Messages</p>
+                                            <p className="text-2xl font-bold text-gray-900">{contactStats.total}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                                            <Mail className="w-6 h-6 text-red-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500">Unread</p>
+                                            <p className="text-2xl font-bold text-gray-900">{contactStats.unread}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                            <MailOpen className="w-6 h-6 text-green-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500">Read</p>
+                                            <p className="text-2xl font-bold text-gray-900">{contactStats.read}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                                            <FileText className="w-6 h-6 text-gray-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500">Archived</p>
+                                            <p className="text-2xl font-bold text-gray-900">{contactStats.archived}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Messages Section */}
+                            <div className="bg-white rounded-xl shadow-sm">
+                                {/* Header */}
+                                <div className="p-6 border-b">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h2 className="text-lg font-bold text-gray-900">Contact Messages</h2>
+                                            <p className="text-sm text-gray-500">Messages from your contact form</p>
+                                        </div>
                                         <div className="flex items-center space-x-2">
-                                            {(['all', 'upcoming', 'past'] as const).map((f) => (
+                                            {(['all', 'unread', 'read', 'archived'] as const).map((f) => (
                                                 <button
                                                     key={f}
-                                                    onClick={() => { setFilter(f); setPodcastPage(1); }}
-                                                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${filter === f
+                                                    onClick={() => setMessageFilter(f)}
+                                                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${messageFilter === f
                                                         ? 'bg-maroon-700 text-white'
                                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                         }`}
@@ -854,1061 +1883,67 @@ export default function AdminDashboard() {
                                                 </button>
                                             ))}
                                         </div>
-                                        <Link
-                                            to="/admin/podcast/new"
-                                            className="flex items-center space-x-2 px-4 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors"
-                                        >
-                                            <Plus className="w-4 h-4" />
-                                            <span>Add Podcast</span>
-                                        </Link>
                                     </div>
                                 </div>
-                                {/* Search Bar */}
-                                <div className="relative max-w-md">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search by title, guest, episode #..."
-                                        value={podcastSearch}
-                                        onChange={(e) => { setPodcastSearch(e.target.value); setPodcastPage(1); }}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
-                                    />
-                                </div>
-                            </div>
 
-                            {/* List */}
-                            <div className="divide-y">
-                                {isLoading ? (
-                                    <div className="p-12 text-center">
-                                        <Loader2 className="w-8 h-8 animate-spin text-maroon-700 mx-auto" />
-                                        <p className="text-gray-500 mt-2">Loading podcasts...</p>
-                                    </div>
-                                ) : podcasts.length === 0 ? (
-                                    <div className="p-12 text-center">
-                                        <p className="text-gray-500">{podcastSearch ? 'No podcasts match your search.' : 'No podcasts found.'}</p>
-                                        {!podcastSearch && (
-                                            <Link
-                                                to="/admin/podcast/new"
-                                                className="inline-flex items-center space-x-2 mt-4 text-maroon-700 hover:text-maroon-800"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                                <span>Create your first podcast</span>
-                                            </Link>
-                                        )}
-                                    </div>
-                                ) : (
-                                    podcasts.map((podcast) => (
-                                        <div
-                                            key={podcast._id}
-                                            className="p-6 hover:bg-gray-50 transition-colors"
-                                        >
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center space-x-2 mb-2">
-                                                        <span className="text-sm font-bold text-maroon-700">
-                                                            #{podcast.episodeNumber}
-                                                        </span>
-                                                        <span
-                                                            className={`badge ${podcast.category === 'upcoming'
-                                                                ? 'badge-upcoming'
-                                                                : 'badge-past'
-                                                                }`}
-                                                        >
-                                                            {podcast.category}
-                                                        </span>
-                                                    </div>
-                                                    <h3 className="font-semibold text-gray-900 mb-1">
-                                                        {podcast.title}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-500 mb-2">
-                                                        Guest: {podcast.guestName} • {podcast.guestTitle}
-                                                    </p>
-                                                    <p className="text-sm text-gray-400">
-                                                        {formatDate(podcast.scheduledDate)} • {podcast.scheduledTime}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <Link
-                                                        to={`/admin/podcast/edit/${podcast._id}`}
-                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                    >
-                                                        <Edit className="w-5 h-5" />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => handleDeletePodcast(podcast._id)}
-                                                        disabled={deleteId === podcast._id}
-                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                                                    >
-                                                        {deleteId === podcast._id ? (
-                                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                                        ) : (
-                                                            <Trash2 className="w-5 h-5" />
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
+                                {/* Messages List */}
+                                <div className="divide-y">
+                                    {messagesLoading ? (
+                                        <div className="p-12 text-center">
+                                            <Loader2 className="w-8 h-8 animate-spin text-maroon-700 mx-auto" />
+                                            <p className="text-gray-500 mt-2">Loading messages...</p>
                                         </div>
-                                    ))
-                                )}
-                            </div>
-
-                            {/* Pagination Controls */}
-                            {totalPodcastPages > 1 && (
-                                <div className="p-4 border-t flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">
-                                        Page {podcastPage} of {totalPodcastPages}
-                                    </span>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={() => setPodcastPage(p => Math.max(1, p - 1))}
-                                            disabled={podcastPage === 1}
-                                            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                            <span>Previous</span>
-                                        </button>
-                                        {/* Page numbers */}
-                                        <div className="hidden sm:flex items-center space-x-1">
-                                            {Array.from({ length: Math.min(5, totalPodcastPages) }, (_, i) => {
-                                                let pageNum;
-                                                if (totalPodcastPages <= 5) {
-                                                    pageNum = i + 1;
-                                                } else if (podcastPage <= 3) {
-                                                    pageNum = i + 1;
-                                                } else if (podcastPage >= totalPodcastPages - 2) {
-                                                    pageNum = totalPodcastPages - 4 + i;
-                                                } else {
-                                                    pageNum = podcastPage - 2 + i;
-                                                }
-                                                return (
-                                                    <button
-                                                        key={pageNum}
-                                                        onClick={() => setPodcastPage(pageNum)}
-                                                        className={`w-8 h-8 text-sm font-medium rounded-lg transition-colors ${podcastPage === pageNum
-                                                            ? 'bg-maroon-700 text-white'
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                            }`}
-                                                    >
-                                                        {pageNum}
-                                                    </button>
-                                                );
-                                            })}
+                                    ) : messages.length === 0 ? (
+                                        <div className="p-12 text-center">
+                                            <Mail className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                                            <p className="text-gray-500">No messages found</p>
                                         </div>
-                                        <button
-                                            onClick={() => setPodcastPage(p => Math.min(totalPodcastPages, p + 1))}
-                                            disabled={podcastPage === totalPodcastPages}
-                                            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        >
-                                            <span>Next</span>
-                                            <ChevronRight className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Blogs Tab */}
-                {activeTab === 'blogs' && (
-                    <div className="tab-content-wrapper">
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-maroon-100 rounded-xl flex items-center justify-center">
-                                        <FileText className="w-6 h-6 text-maroon-700" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Total Blogs</p>
-                                        <p className="text-2xl font-bold text-gray-900">{blogStats.total}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                                        <Eye className="w-6 h-6 text-green-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Published</p>
-                                        <p className="text-2xl font-bold text-gray-900">{blogStats.published}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                                        <EyeOff className="w-6 h-6 text-yellow-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Drafts</p>
-                                        <p className="text-2xl font-bold text-gray-900">{blogStats.drafts}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Blogs Section */}
-                        <div className="bg-white rounded-xl shadow-sm">
-                            {/* Header */}
-                            <div className="p-6 border-b flex flex-col gap-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                    <div>
-                                        <h2 className="text-lg font-bold text-gray-900">All Blogs</h2>
-                                        <p className="text-sm text-gray-500">
-                                            Showing {blogs.length} of {totalBlogCount} blogs
-                                        </p>
-                                    </div>
-                                    <Link
-                                        to="/admin/blog/new"
-                                        className="flex items-center space-x-2 px-4 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        <span>Add Blog</span>
-                                    </Link>
-                                </div>
-                                {/* Search Bar */}
-                                <div className="relative max-w-md">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search by title, category, author..."
-                                        value={blogSearch}
-                                        onChange={(e) => { setBlogSearch(e.target.value); setBlogPage(1); }}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* List */}
-                            <div className="divide-y">
-                                {blogsLoading ? (
-                                    <div className="p-12 text-center">
-                                        <Loader2 className="w-8 h-8 animate-spin text-maroon-700 mx-auto" />
-                                        <p className="text-gray-500 mt-2">Loading blogs...</p>
-                                    </div>
-                                ) : blogs.length === 0 ? (
-                                    <div className="p-12 text-center">
-                                        <p className="text-gray-500">{blogSearch ? 'No blogs match your search.' : 'No blogs found.'}</p>
-                                        {!blogSearch && (
-                                            <Link
-                                                to="/admin/blog/new"
-                                                className="inline-flex items-center space-x-2 mt-4 text-maroon-700 hover:text-maroon-800"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                                <span>Create your first blog post</span>
-                                            </Link>
-                                        )}
-                                    </div>
-                                ) : (
-                                    blogs.map((blog) => (
-                                        <div
-                                            key={blog._id}
-                                            className="p-6 hover:bg-gray-50 transition-colors"
-                                        >
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center space-x-2 mb-2">
-                                                        <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded">
-                                                            {blog.category}
-                                                        </span>
-                                                        {blog.isPublished ? (
-                                                            <span className="flex items-center gap-1 text-xs text-green-600">
-                                                                <Eye className="w-3 h-3" /> Published
-                                                            </span>
-                                                        ) : (
-                                                            <span className="flex items-center gap-1 text-xs text-yellow-600">
-                                                                <EyeOff className="w-3 h-3" /> Draft
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <h3 className="font-semibold text-gray-900 mb-1">
-                                                        {blog.title}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-500 mb-2 line-clamp-1">
-                                                        {blog.excerpt}
-                                                    </p>
-                                                    <p className="text-sm text-gray-400">
-                                                        By {blog.author} • {formatDate(blog.createdAt)} • {blog.readTime}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <Link
-                                                        to={`/admin/blog/edit/${blog._id}`}
-                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                    >
-                                                        <Edit className="w-5 h-5" />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => handleDeleteBlog(blog._id)}
-                                                        disabled={deleteId === blog._id}
-                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                                                    >
-                                                        {deleteId === blog._id ? (
-                                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                                        ) : (
-                                                            <Trash2 className="w-5 h-5" />
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-
-                            {/* Pagination Controls */}
-                            {totalBlogPages > 1 && (
-                                <div className="p-4 border-t flex items-center justify-between">
-                                    <span className="text-sm text-gray-600">
-                                        Page {blogPage} of {totalBlogPages}
-                                    </span>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={() => setBlogPage(p => Math.max(1, p - 1))}
-                                            disabled={blogPage === 1}
-                                            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                            <span>Previous</span>
-                                        </button>
-                                        {/* Page numbers */}
-                                        <div className="hidden sm:flex items-center space-x-1">
-                                            {Array.from({ length: Math.min(5, totalBlogPages) }, (_, i) => {
-                                                let pageNum;
-                                                if (totalBlogPages <= 5) {
-                                                    pageNum = i + 1;
-                                                } else if (blogPage <= 3) {
-                                                    pageNum = i + 1;
-                                                } else if (blogPage >= totalBlogPages - 2) {
-                                                    pageNum = totalBlogPages - 4 + i;
-                                                } else {
-                                                    pageNum = blogPage - 2 + i;
-                                                }
-                                                return (
-                                                    <button
-                                                        key={pageNum}
-                                                        onClick={() => setBlogPage(pageNum)}
-                                                        className={`w-8 h-8 text-sm font-medium rounded-lg transition-colors ${blogPage === pageNum
-                                                            ? 'bg-maroon-700 text-white'
-                                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                            }`}
-                                                    >
-                                                        {pageNum}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                        <button
-                                            onClick={() => setBlogPage(p => Math.min(totalBlogPages, p + 1))}
-                                            disabled={blogPage === totalBlogPages}
-                                            className="flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        >
-                                            <span>Next</span>
-                                            <ChevronRight className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Import Tab */}
-                {activeTab === 'import' && (
-                    <div className="tab-content-wrapper">
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                            <FileJson className="w-6 h-6 text-maroon-700" />
-                            Import Podcasts
-                        </h2>
-
-                        {/* Sample JSON Format */}
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-3">JSON Format</h3>
-                            <p className="text-gray-600 text-sm mb-3">
-                                Paste a JSON array of podcasts to import. Each podcast should have the following fields:
-                            </p>
-                            <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-                                <pre className="text-sm font-mono whitespace-pre-wrap">{SAMPLE_JSON}</pre>
-                            </div>
-                            <div className="flex gap-3 mt-3">
-                                <button
-                                    onClick={handleCopySample}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                                >
-                                    <Copy className="w-4 h-4" />
-                                    Copy Sample
-                                </button>
-                                <button
-                                    onClick={() => setJsonData(SAMPLE_JSON)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors"
-                                >
-                                    Load Sample
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* File Upload */}
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Upload JSON File (optional)</h3>
-                            <input
-                                type="file"
-                                accept=".json"
-                                onChange={handleFileUpload}
-                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-maroon-700 file:text-white hover:file:bg-maroon-800"
-                            />
-                        </div>
-
-                        {/* JSON Input */}
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Or paste JSON directly</h3>
-                            <textarea
-                                value={jsonData}
-                                onChange={(e) => setJsonData(e.target.value)}
-                                className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
-                                placeholder="Paste your JSON here..."
-                            />
-                        </div>
-
-                        {/* Error Message */}
-                        {importError && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-                                <XCircle className="w-5 h-5" />
-                                {importError}
-                            </div>
-                        )}
-
-                        {/* Success Result */}
-                        {importResult && (
-                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
-                                    <CheckCircle className="w-5 h-5" />
-                                    Import Complete
-                                </div>
-                                <p className="text-sm text-green-600">
-                                    Successfully imported {importResult.success} podcasts.
-                                    {importResult.failed > 0 && ` Failed: ${importResult.failed}`}
-                                </p>
-                                {importResult.errors.length > 0 && (
-                                    <ul className="mt-2 text-sm text-red-600 list-disc list-inside">
-                                        {importResult.errors.map((err, i) => (
-                                            <li key={i}>{err}</li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Import Button */}
-                        <button
-                            onClick={handleImport}
-                            disabled={importLoading || !jsonData.trim()}
-                            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                        >
-                            {importLoading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Importing...
-                                </>
-                            ) : (
-                                <>
-                                    <Upload className="w-5 h-5" />
-                                    Import Podcasts
-                                </>
-                            )}
-                        </button>
-                    </div>
-                    </div>
-                )}
-
-                {/* About Us Tab */}
-                {activeTab === 'about' && (
-                    <div className="tab-content-wrapper">
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                            <Info className="w-6 h-6 text-maroon-700" />
-                            Edit About Us Content
-                        </h2>
-
-                        {aboutLoading ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="w-8 h-8 animate-spin text-maroon-700" />
-                            </div>
-                        ) : (
-                            <>
-                                {/* Title */}
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Title
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={aboutContent.title}
-                                        onChange={(e) => setAboutContent(prev => ({ ...prev, title: e.target.value }))}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                {/* Paragraphs */}
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Paragraphs
-                                    </label>
-                                    <div className="space-y-6">
-                                        {aboutContent.paragraphs.map((paragraph, index) => (
-                                            <div key={index} className="relative">
-                                                <div className="flex items-start gap-2">
-                                                    <span className="text-xs text-gray-500 mt-3 w-6">{index + 1}.</span>
-                                                    <div className="flex-1">
-                                                        <ReactQuill
-                                                            theme="snow"
-                                                            value={paragraph}
-                                                            onChange={(value: string) => handleUpdateParagraph(index, value)}
-                                                            modules={{
-                                                                toolbar: [
-                                                                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                                                                    [{ 'font': ['serif', 'sans-serif', 'monospace', 'arial', 'times-new-roman', 'georgia', 'verdana', 'courier'] }],
-                                                                    [{ 'size': ['small', false, 'large', 'huge'] }],
-                                                                    ['bold', 'italic', 'underline', 'strike'],
-                                                                    [{ 'color': [] }, { 'background': [] }],
-                                                                    [{ 'script': 'sub' }, { 'script': 'super' }],
-                                                                    [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
-                                                                    [{ 'align': [] }],
-                                                                    ['blockquote', 'code-block'],
-                                                                    ['link', 'image', 'video'],
-                                                                    ['clean']
-                                                                ]
-                                                            }}
-                                                            formats={[
-                                                                'header', 'font', 'size',
-                                                                'bold', 'italic', 'underline', 'strike',
-                                                                'color', 'background',
-                                                                'script',
-                                                                'list', 'bullet', 'indent',
-                                                                'align',
-                                                                'blockquote', 'code-block',
-                                                                'link', 'image', 'video'
-                                                            ]}
-                                                            className="bg-white rounded-lg"
-                                                            placeholder={`Enter paragraph ${index + 1}...`}
-                                                        />
-                                                    </div>
-                                                    {aboutContent.paragraphs.length > 1 && (
-                                                        <button
-                                                            onClick={() => handleRemoveParagraph(index)}
-                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-1"
-                                                            title="Remove paragraph"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <button
-                                        onClick={handleAddParagraph}
-                                        className="mt-4 flex items-center gap-2 px-4 py-2 text-maroon-700 border border-maroon-700 rounded-lg hover:bg-maroon-50 transition-colors"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                        Add Paragraph
-                                    </button>
-                                </div>
-
-                                {/* Error/Success Messages */}
-                                {aboutError && (
-                                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-                                        <XCircle className="w-5 h-5" />
-                                        {aboutError}
-                                    </div>
-                                )}
-                                {aboutSuccess && (
-                                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
-                                        <CheckCircle className="w-5 h-5" />
-                                        About Us content saved successfully!
-                                    </div>
-                                )}
-
-                                {/* Save Button */}
-                                <button
-                                    onClick={handleSaveAbout}
-                                    disabled={aboutSaving}
-                                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                                >
-                                    {aboutSaving ? (
-                                        <>
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            Saving...
-                                        </>
                                     ) : (
-                                        <>
-                                            <Save className="w-5 h-5" />
-                                            Save Changes
-                                        </>
-                                    )}
-                                </button>
-                            </>
-                        )}
-                    </div>
-                    </div>
-                )}
-
-                {/* Settings Tab */}
-                {activeTab === 'settings' && (
-                    <div className="tab-content-wrapper">
-                    <div className="space-y-6">
-                        {/* System Health Section */}
-                        <div
-                            className="bg-white rounded-xl shadow-sm p-6"
-                        >
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                    <Activity className="w-6 h-6 text-maroon-700" />
-                                    System Status
-                                </h2>
-                                <button
-                                    onClick={checkSystemHealth}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                    title="Refresh Status"
-                                >
-                                    <RefreshCw className={`w-5 h-5 text-gray-600 ${healthLoading ? 'animate-spin' : ''}`} />
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <Server className="w-5 h-5 text-gray-600" />
-                                        <span className="font-medium text-gray-700">Backend API</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${systemHealth?.status === 'ok' ? 'bg-green-500' : 'bg-red-500'}`} />
-                                        <span className={`text-sm font-medium ${systemHealth?.status === 'ok' ? 'text-green-700' : 'text-red-700'}`}>
-                                            {systemHealth?.status === 'ok' ? 'Operational' : 'Unreachable'}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <Database className="w-5 h-5 text-gray-600" />
-                                        <span className="font-medium text-gray-700">Database</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${systemHealth?.database?.state === 'connected' ? 'bg-green-500' : 'bg-red-500'}`} />
-                                        <span className={`text-sm font-medium ${systemHealth?.database?.state === 'connected' ? 'text-green-700' : 'text-red-700'}`}>
-                                            {systemHealth?.database?.state === 'connected' ? 'Connected' : 'Disconnected'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* MongoDB Atlas Cluster Status */}
-                        <div
-                            className="bg-white rounded-xl shadow-sm p-6"
-                        >
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                    <Database className="w-6 h-6 text-green-600" />
-                                    MongoDB Atlas Cluster
-                                </h2>
-                                <button
-                                    onClick={fetchMongoCluster}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                    title="Refresh Cluster Status"
-                                >
-                                    <RefreshCw className={`w-5 h-5 text-gray-600 ${mongoLoading ? 'animate-spin' : ''}`} />
-                                </button>
-                            </div>
-
-                            {mongoLoading && !mongoCluster ? (
-                                <div className="flex justify-center py-8">
-                                    <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-                                </div>
-                            ) : mongoCluster ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                        <p className="text-sm text-gray-500 mb-1">Cluster Name</p>
-                                        <p className="font-semibold text-gray-900">{mongoCluster.name}</p>
-                                    </div>
-                                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                        <p className="text-sm text-gray-500 mb-1">MongoDB Version</p>
-                                        <p className="font-semibold text-gray-900">{mongoCluster.mongoDBVersion}</p>
-                                    </div>
-                                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                        <p className="text-sm text-gray-500 mb-1">State</p>
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2.5 h-2.5 rounded-full ${mongoCluster.stateName === 'IDLE' ? 'bg-green-500' : mongoCluster.stateName === 'CREATING' ? 'bg-yellow-500' : 'bg-red-500'}`} />
-                                            <span className={`font-semibold ${mongoCluster.stateName === 'IDLE' ? 'text-green-700' : mongoCluster.stateName === 'CREATING' ? 'text-yellow-700' : 'text-red-700'}`}>
-                                                {mongoCluster.stateName === 'IDLE' ? 'Running' : mongoCluster.stateName}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                                        <p className="text-sm text-gray-500 mb-1">Region</p>
-                                        <p className="font-semibold text-gray-900">{mongoCluster.providerSettings?.regionName || 'N/A'}</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 text-gray-500">
-                                    <Database className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                    {mongoError ? (
-                                        <>
-                                            <p className="text-red-600 font-medium">Error: {mongoError}</p>
-                                            {mongoError.includes('401') && (
-                                                <div className="mt-4 text-left bg-red-50 p-4 rounded text-sm text-gray-700">
-                                                    <p className="font-bold mb-2">How to fix 401 Unauthorized:</p>
-                                                    <ul className="list-disc pl-5 space-y-1">
-                                                        <li>Go to <a href="https://cloud.mongodb.com" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">MongoDB Atlas Dashboard</a></li>
-                                                        <li>Click <strong>Access Manager</strong> {'>'} <strong>Project Access</strong></li>
-                                                        <li>Find your API Key <strong>({(mongoCluster as any)?.publicKey || '...'})</strong></li>
-                                                        <li>Click <strong>Edit</strong> {'>'} <strong>Access List</strong></li>
-                                                        <li>Add Entry: <code>0.0.0.0/0</code> (Allow from anywhere)</li>
-                                                        <li>Save changes and wait 1 minute</li>
-                                                    </ul>
-                                                    <p className="mt-2 text-xs text-gray-500">Note: This is required because Render servers use dynamic IPs.</p>
-                                                </div>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <p>MongoDB Atlas credentials not configured or cluster unavailable.</p>
-                                            <p className="text-sm mt-1">Configure MONGO_PUBLIC_KEY, MONGO_PRIVATE_KEY, and MONGO_PROJECT_ID in backend environment.</p>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-
-                        {/* Episode Loading Configuration */}
-                        <div
-                            className="bg-white rounded-xl shadow-sm p-6"
-                        >
-                            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <BarChart3 className="w-6 h-6 text-blue-600" />
-                                Episode Loading Configuration
-                            </h2>
-                            <p className="text-sm text-gray-500 mb-6">
-                                Configure how many episodes are displayed initially and loaded on scroll for the home page.
-                            </p>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Upcoming Episodes */}
-                                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                                    <h3 className="font-semibold text-green-800 mb-4 flex items-center gap-2">
-                                        <Calendar className="w-5 h-5" />
-                                        Upcoming Episodes
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Initial Load
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                max="50"
-                                                value={episodeSettings.upcomingInitialLoad}
-                                                onChange={(e) => setEpisodeSettings(prev => ({
-                                                    ...prev,
-                                                    upcomingInitialLoad: parseInt(e.target.value) || 4
-                                                }))}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">Episodes on page load</p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Scroll Batch
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                max="50"
-                                                value={episodeSettings.upcomingBatchSize}
-                                                onChange={(e) => setEpisodeSettings(prev => ({
-                                                    ...prev,
-                                                    upcomingBatchSize: parseInt(e.target.value) || 4
-                                                }))}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">Episodes per scroll</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Past Episodes */}
-                                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                    <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
-                                        <Clock className="w-5 h-5" />
-                                        Past Episodes
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Initial Load
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                max="50"
-                                                value={episodeSettings.pastInitialLoad}
-                                                onChange={(e) => setEpisodeSettings(prev => ({
-                                                    ...prev,
-                                                    pastInitialLoad: parseInt(e.target.value) || 4
-                                                }))}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">Episodes on page load</p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Scroll Batch
-                                            </label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                max="50"
-                                                value={episodeSettings.pastBatchSize}
-                                                onChange={(e) => setEpisodeSettings(prev => ({
-                                                    ...prev,
-                                                    pastBatchSize: parseInt(e.target.value) || 6
-                                                }))}
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                            <p className="text-xs text-gray-500 mt-1">Episodes per scroll</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
-
-                        {/* Google Analytics Configuration */}
-                        <div
-                            className="bg-white rounded-xl shadow-sm p-6"
-                        >
-                            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <Activity className="w-6 h-6 text-orange-600" />
-                                Google Analytics
-                            </h2>
-                            <p className="text-sm text-gray-500 mb-6">
-                                Track website traffic and user behavior.
-                            </p>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Measurement ID (G-XXXXXXXXXX)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={episodeSettings.googleAnalyticsId || ''}
-                                    onChange={(e) => setEpisodeSettings(prev => ({
-                                        ...prev,
-                                        googleAnalyticsId: e.target.value
-                                    }))}
-                                    placeholder="G-XXXXXXXXXX"
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono"
-                                />
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Enter your Google Analytics 4 Measurement ID to enable tracking.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Analytics Dashboard - Shows analytics data */}
-                        <AnalyticsDashboard measurementId={episodeSettings.googleAnalyticsId} />
-
-                        {/* MongoDB Configuration */}
-
-                        {/* Save Button with Error Display */}
-                        <div className="space-y-4">
-                            {settingsError && (
-                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-                                    <XCircle className="w-5 h-5" />
-                                    {settingsError}
-                                </div>
-                            )}
-                            <div className="flex justify-end">
-                                <button
-                                    onClick={saveSettings}
-                                    disabled={settingsSaving}
-                                    className="px-6 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {settingsSaving ? (
-                                        <>
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            Saving...
-                                        </>
-                                    ) : settingsSaved ? (
-                                        <>
-                                            <CheckCircle className="w-5 h-5" />
-                                            Saved!
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="w-5 h-5" />
-                                            Save Configuration
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Recent Deployments */}
-                        <div className="space-y-6">
-                            <DeploymentsTable deployments={frontendDeployments} title="Frontend" />
-                            <DeploymentsTable deployments={backendDeployments} title="Backend" />
-                        </div>
-                    </div>
-                    </div>
-                )
-                }
-
-                {/* Inbox Tab */}
-                {activeTab === 'inbox' && (
-                    <div className="tab-content-wrapper">
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                        <Mail className="w-6 h-6 text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Total Messages</p>
-                                        <p className="text-2xl font-bold text-gray-900">{contactStats.total}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                                        <Mail className="w-6 h-6 text-red-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Unread</p>
-                                        <p className="text-2xl font-bold text-gray-900">{contactStats.unread}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                                        <MailOpen className="w-6 h-6 text-green-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Read</p>
-                                        <p className="text-2xl font-bold text-gray-900">{contactStats.read}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
-                                        <FileText className="w-6 h-6 text-gray-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Archived</p>
-                                        <p className="text-2xl font-bold text-gray-900">{contactStats.archived}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Messages Section */}
-                        <div className="bg-white rounded-xl shadow-sm">
-                            {/* Header */}
-                            <div className="p-6 border-b">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-lg font-bold text-gray-900">Contact Messages</h2>
-                                        <p className="text-sm text-gray-500">Messages from your contact form</p>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        {(['all', 'unread', 'read', 'archived'] as const).map((f) => (
-                                            <button
-                                                key={f}
-                                                onClick={() => setMessageFilter(f)}
-                                                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${messageFilter === f
-                                                    ? 'bg-maroon-700 text-white'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        messages.map((message) => (
+                                            <div
+                                                key={message._id}
+                                                className={`p-6 hover:bg-gray-50 transition-colors cursor-pointer ${message.status === 'unread' ? 'bg-blue-50' : ''
                                                     }`}
+                                                onClick={() => {
+                                                    if (message.status === 'unread') {
+                                                        handleMarkAsRead(message._id);
+                                                    }
+                                                }}
                                             >
-                                                {f.charAt(0).toUpperCase() + f.slice(1)}
-                                            </button>
-                                        ))}
-                                    </div>
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center space-x-2 mb-2">
+                                                            {message.status === 'unread' && (
+                                                                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                                            )}
+                                                            <h3 className={`font-semibold text-gray-900 ${message.status === 'unread' ? 'font-bold' : ''
+                                                                }`}>
+                                                                {message.name}
+                                                            </h3>
+                                                            <span className="text-sm text-gray-400">
+                                                                {new Date(message.createdAt).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mb-1">{message.email}</p>
+                                                        <p className="text-sm text-gray-500 line-clamp-2">{message.message}</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteMessage(message._id);
+                                                        }}
+                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
-
-                            {/* Messages List */}
-                            <div className="divide-y">
-                                {messagesLoading ? (
-                                    <div className="p-12 text-center">
-                                        <Loader2 className="w-8 h-8 animate-spin text-maroon-700 mx-auto" />
-                                        <p className="text-gray-500 mt-2">Loading messages...</p>
-                                    </div>
-                                ) : messages.length === 0 ? (
-                                    <div className="p-12 text-center">
-                                        <Mail className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                        <p className="text-gray-500">No messages found</p>
-                                    </div>
-                                ) : (
-                                    messages.map((message) => (
-                                        <div
-                                            key={message._id}
-                                            className={`p-6 hover:bg-gray-50 transition-colors cursor-pointer ${message.status === 'unread' ? 'bg-blue-50' : ''
-                                                }`}
-                                            onClick={() => {
-                                                if (message.status === 'unread') {
-                                                    handleMarkAsRead(message._id);
-                                                }
-                                            }}
-                                        >
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center space-x-2 mb-2">
-                                                        {message.status === 'unread' && (
-                                                            <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                                                        )}
-                                                        <h3 className={`font-semibold text-gray-900 ${message.status === 'unread' ? 'font-bold' : ''
-                                                            }`}>
-                                                            {message.name}
-                                                        </h3>
-                                                        <span className="text-sm text-gray-400">
-                                                            {new Date(message.createdAt).toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-sm text-gray-600 mb-1">{message.email}</p>
-                                                    <p className="text-sm text-gray-500 line-clamp-2">{message.message}</p>
-                                                </div>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteMessage(message._id);
-                                                    }}
-                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
                 </div>
             </main >

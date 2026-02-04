@@ -156,6 +156,7 @@ export interface Podcast {
     amazonMusicUrl?: string;
     audibleUrl?: string;
     soundcloudUrl?: string;
+    earthUrl?: string;
     thumbnailImage?: string;
     tags: string[];
     isRescheduled: boolean;
@@ -190,6 +191,7 @@ export interface PodcastInput {
     amazonMusicUrl?: string;
     audibleUrl?: string;
     soundcloudUrl?: string;
+    earthUrl?: string;
     thumbnailImage?: string;
     tags?: string[];
     isRescheduled?: boolean;
@@ -308,6 +310,15 @@ export interface AnalyticsConfig {
 
 export const analyticsAPI = {
     getConfig: () => api.get<AnalyticsConfig>('/analytics/config'),
+};
+
+// Excel Export API
+export const excelAPI = {
+    exportPodcasts: () => {
+        return api.get('/excel/export', {
+            responseType: 'blob',
+        });
+    },
 };
 
 export default api;

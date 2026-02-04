@@ -51,7 +51,7 @@ export default function Podcasts() {
     // Initial fetch - ONLY PAST episodes - same as Home page
     const fetchInitial = useCallback(async (query: string = '') => {
         if (!settingsLoaded) return;
-        
+
         setIsLoading(true);
         setError(null);
         setPage(1);
@@ -68,8 +68,14 @@ export default function Podcasts() {
             });
 
             const newPodcasts = response.data.podcasts || [];
-            setPodcasts(newPodcasts);
-            console.log(`[Podcasts] Got ${newPodcasts.length}/${response.data.pagination?.total} past podcasts`);
+
+            // Remove duplicates based on _id
+            const uniquePodcasts = newPodcasts.filter((podcast: Podcast, index: number, self: Podcast[]) =>
+                index === self.findIndex((p: Podcast) => p._id === podcast._id)
+            );
+
+            setPodcasts(uniquePodcasts);
+            console.log(`[Podcasts] Got ${uniquePodcasts.length}/${response.data.pagination?.total} past podcasts (removed ${newPodcasts.length - uniquePodcasts.length} duplicates)`);
 
             // If we got fewer than limit, we reached the end
             setHasMore(newPodcasts.length >= limit && response.data.pagination.page < response.data.pagination.pages);
@@ -101,7 +107,14 @@ export default function Podcasts() {
             });
 
             const newPodcasts = response.data.podcasts || [];
-            setPodcasts(prev => [...prev, ...newPodcasts]);
+
+            // Merge with existing and remove duplicates
+            setPodcasts(prev => {
+                const combined = [...prev, ...newPodcasts];
+                return combined.filter((podcast: Podcast, index: number, self: Podcast[]) =>
+                    index === self.findIndex((p: Podcast) => p._id === podcast._id)
+                );
+            });
             setPage(nextPage);
             console.log(`[Podcasts] Added ${newPodcasts.length} more past podcasts`);
 

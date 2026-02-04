@@ -9,6 +9,7 @@ import appleLogo from '../../assets/platforms/apple-podcasts.png';
 import amazonLogo from '../../assets/platforms/amazon-music.png';
 import audibleLogo from '../../assets/platforms/audible.jpg';
 import soundcloudLogo from '../../assets/platforms/soundcloud.png';
+import earthLogo from '../../assets/platforms/earth.png';
 
 interface PodcastCardProps {
     podcast: Podcast;
@@ -512,6 +513,11 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                         {podcast.soundcloudUrl && (
                             <a href={podcast.soundcloudUrl} target="_blank" rel="noopener noreferrer" className="w-7 h-7 sm:w-9 sm:h-9 bg-white border border-gray-200 rounded-lg p-1 sm:p-1.5 hover:scale-110 transition-transform shadow-sm" title="Listen on SoundCloud">
                                 <img src={soundcloudLogo} alt="SoundCloud" className="w-full h-full object-contain" />
+                            </a>
+                        )}
+                        {podcast.earthUrl && (
+                            <a href={podcast.earthUrl} target="_blank" rel="noopener noreferrer" className="w-7 h-7 sm:w-9 sm:h-9 bg-white border border-gray-200 rounded-lg p-1 sm:p-1.5 hover:scale-110 transition-transform shadow-sm" title="Listen on Earth">
+                                <img src={earthLogo} alt="Earth" className="w-full h-full object-contain" />
                             </a>
                         )}
                     </div>

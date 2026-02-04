@@ -27,6 +27,7 @@ export interface IPodcast extends Document {
     amazonMusicUrl?: string;
     audibleUrl?: string;
     soundcloudUrl?: string;
+    earthUrl?: string;
     thumbnailImage?: string;
     tags: string[];
     isRescheduled: boolean;
@@ -122,6 +123,10 @@ const podcastSchema = new Schema<IPodcast>(
             trim: true,
         },
         soundcloudUrl: {
+            type: String,
+            trim: true,
+        },
+        earthUrl: {
             type: String,
             trim: true,
         },
