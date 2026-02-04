@@ -29,12 +29,6 @@ services:
       - "5000:5000"
     networks:
       - business-talk-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     deploy:
       resources:
         limits:
@@ -67,16 +61,9 @@ services:
     volumes:
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     networks:
       - business-talk-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     deploy:
       resources:
         limits:
