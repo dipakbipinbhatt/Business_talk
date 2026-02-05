@@ -5,54 +5,72 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Accept build argument for API URL
-ARG VITE_API_URL
+ARG VITE_API_URL=/api
 ENV VITE_API_URL=${VITE_API_URL}
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies using npm install
+# Install dependencies
 RUN npm install && npm cache clean --force
 
 # Copy all frontend files
 COPY . .
 
-# Build the application with environment variables
+# Build the application
 RUN npm run build
 
 # Production stage with Nginx
 FROM nginx:alpine
 
-# Create a simple nginx config for Docker (if needed)
+# Create nginx config - HTTP only, no SSL
 RUN echo 'server { \
     listen 80; \
     server_name _; \
     root /usr/share/nginx/html; \
     index index.html; \
     \
+    # Gzip compression \
     gzip on; \
     gzip_vary on; \
     gzip_min_length 1024; \
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript; \
+    gzip_comp_level 6; \
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript image/svg+xml; \
+    gzip_proxied any; \
     \
+    # SPA routing \
     location / { \
         try_files $uri $uri/ /index.html; \
+        add_header Cache-Control "no-cache, must-revalidate"; \
     } \
     \
+    # Cache static assets \
+    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
+        expires 1y; \
+        add_header Cache-Control "public, immutable"; \
+        access_log off; \
+    } \
+    \
+    # Proxy API to backend container \
     location /api/ { \
         proxy_pass http://backend:5000/api/; \
         proxy_http_version 1.1; \
+        proxy_set_header Upgrade $http_upgrade; \
+        proxy_set_header Connection "upgrade"; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
         proxy_set_header X-Forwarded-Proto $scheme; \
+        proxy_connect_timeout 60s; \
+        proxy_send_timeout 60s; \
+        proxy_read_timeout 60s; \
     } \
 }' > /etc/nginx/conf.d/default.conf
 
 # Copy built files from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy public files (banner, uploads, etc.)
+# Copy public files
 COPY --from=builder /app/public /usr/share/nginx/html
 
 # Expose port 80

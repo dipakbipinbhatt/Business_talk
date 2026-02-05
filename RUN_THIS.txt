@@ -1,0 +1,58 @@
+========================================
+🚀 DEPLOY YOUR SITE WITH DOCKER
+========================================
+
+Copy and paste this command on your server:
+
+cd ~/Business_talk && bash FULL_DOCKER_DEPLOY.sh
+
+========================================
+WHAT THIS DOES:
+========================================
+
+1. Stops old containers and nginx
+2. Builds fresh Docker containers
+3. Starts containers:
+   - Backend on localhost:5000
+   - Frontend on localhost:3000
+4. Configures nginx to proxy to containers
+5. Starts nginx on port 80/443
+6. Opens firewall ports
+7. Tests everything
+
+========================================
+AFTER RUNNING:
+========================================
+
+Your site will be live at:
+  http://68.178.161.128
+  http://businesstalkwithdeepakbhatt.com
+  https://businesstalkwithdeepakbhatt.com
+
+========================================
+IF ISSUES:
+========================================
+
+View logs:
+  docker logs business-talk-backend -f
+  docker logs business-talk-frontend -f
+
+Check status:
+  docker ps
+  sudo systemctl status nginx
+
+Restart:
+  docker-compose -f docker-compose.prod.yml restart
+  sudo systemctl restart nginx
+
+========================================
+FILES UPDATED:
+========================================
+
+✅ docker-compose.prod.yml - Containers bind to localhost
+✅ nginx.conf - Reverse proxy configuration
+✅ .env - VITE_API_URL=/api
+✅ FULL_DOCKER_DEPLOY.sh - Deployment script
+✅ DOCKER_DEPLOYMENT_GUIDE.md - Complete guide
+
+========================================
