@@ -1,0 +1,29 @@
+
+# Demo Mode Explained
+
+Your application is currently running in **Demo Mode**.
+
+## Why does it look like this?
+
+1. **Gray "Business Talk" Logos**:
+   - You are seeing identical gray logos because the **Mock Data** does not contain real image URLs.
+   - The system detects the missing image and automatically shows the default "Business Talk" logo as a fallback.
+   - This prevents broken image icons.
+
+2. **Data IS Loading Correctly**:
+   - You can verify the data is loading because you see specific names like:
+     - "Prof. David Teece"
+     - "Prof. Clayton Christensen"
+     - "Prof. Michael Porter"
+   - These names are NOT in the frontend code. They are being served by your Backend from the mock database!
+
+3. **No Errors**:
+   - Your console is now clean of the critical errors (CORS, Router, etc.).
+   - The yellow logs you see (e.g., `Using logo fallback`) are informational messages confirming the fallback logic is working.
+
+## How to get Real Images?
+
+To see real images and data:
+1. You must connect to the real MongoDB database.
+2. This requires Whitelisting your IP address in MongoDB Atlas.
+3. Once connected, the backend will serve the real data with real image URLs.
