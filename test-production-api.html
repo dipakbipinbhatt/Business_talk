@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Production API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-box {
+            border: 2px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .success { border-color: #4CAF50; background: #f1f8f4; }
+        .error { border-color: #f44336; background: #fef1f0; }
+        .loading { border-color: #2196F3; background: #e3f2fd; }
+        button {
+            background: #8B1538;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #6d0f2a; }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .status { font-weight: bold; font-size: 18px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Production API Diagnostic Tool</h1>
+    <p>This tool tests your production API to find why the site is not loading.</p>
+
+    <button onclick="runAllTests()">🚀 Run All Tests</button>
+
+    <div id="test1" class="test-box loading">
+        <h2>Test 1: Backend API Health</h2>
+        <div class="status">⏳ Waiting...</div>
+        <pre id="test1-result">Click "Run All Tests" to start</pre>
+    </div>
+
+    <div id="test2" class="test-box loading">
+        <h2>Test 2: Fetch Podcasts (Paginated)</h2>
+        <div class="status">⏳ Waiting...</div>
+        <pre id="test2-result">Click "Run All Tests" to start</pre>
+    </div>
+
+    <div id="test3" class="test-box loading">
+        <h2>Test 3: Fetch All Podcasts (Unlimited)</h2>
+        <div class="status">⏳ Waiting...</div>
+        <pre id="test3-result">Click "Run All Tests" to start</pre>
+    </div>
+
+    <div id="test4" class="test-box loading">
+        <h2>Test 4: Fetch with Compact Mode</h2>
+        <div class="status">⏳ Waiting...</div>
+        <pre id="test4-result">Click "Run All Tests" to start</pre>
+    </div>
+
+    <div id="summary" class="test-box" style="display:none;">
+        <h2>📊 Summary</h2>
+        <div id="summary-content"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://businesstalkwithdeepakbhatt.com/api';
+        
+        async function testAPI(url, testId, description) {
+            const box = document.getElementById(testId);
+            const result = document.getElementById(testId + '-result');
+            const status = box.querySelector('.status');
+            
+            status.textContent = '⏳ Testing...';
+            box.className = 'test-box loading';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(url);
+                const duration = Date.now() - startTime;
+                const data = await response.json();
+                
+                if (response.ok) {
+                    status.textContent = '✅ SUCCESS';
+                    box.className = 'test-box success';
+                    
+                    const podcastCount = data.podcasts?.length || 0;
+                    const total = data.pagination?.total || 0;
+                    
+                    result.textContent = `Status: ${response.status} OK
+Time: ${duration}ms
+Podcasts returned: ${podcastCount}
+Total in database: ${total}
+Response size: ${JSON.stringify(data).length} bytes
+
+${description}`;
+                    
+                    return { success: true, duration, count: podcastCount, total };
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                const duration = Date.now() - startTime;
+                status.textContent = '❌ FAILED';
+                box.className = 'test-box error';
+                
+                result.textContent = `Error: ${error.message}
+Time: ${duration}ms
+
+Possible causes:
+- Backend server is down
+- MongoDB connection failed
+- CORS issue
+- Network timeout
+
+Check backend logs:
+  pm2 logs backend --lines 50`;
+                
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function runAllTests() {
+            console.log('🚀 Starting diagnostic tests...');
+            
+            // Test 1: Basic health check
+            const test1 = await testAPI(
+                `${API_BASE}/podcasts?limit=10&page=1`,
+                'test1',
+                'Basic API test with pagination'
+            );
+            
+            // Test 2: Paginated fetch
+            const test2 = await testAPI(
+                `${API_BASE}/podcasts?limit=4&page=1&category=past`,
+                'test2',
+                'Fetch past podcasts with pagination (like Home page)'
+            );
+            
+            // Test 3: Unlimited fetch
+            const test3 = await testAPI(
+                `${API_BASE}/podcasts?limit=0`,
+                'test3',
+                'Fetch ALL podcasts (like Calendar page - OLD WAY)'
+            );
+            
+            // Test 4: Compact mode
+            const test4 = await testAPI(
+                `${API_BASE}/podcasts?limit=0&compact=true`,
+                'test4',
+                'Fetch ALL podcasts with compact mode (NEW OPTIMIZED WAY)'
+            );
+            
+            // Show summary
+            const summary = document.getElementById('summary');
+            const summaryContent = document.getElementById('summary-content');
+            summary.style.display = 'block';
+            
+            let html = '<h3>Results:</h3><ul>';
+            
+            if (test1.success) {
+                html += `<li>✅ Backend API is working</li>`;
+                html += `<li>✅ Database has ${test1.total} podcasts</li>`;
+            } else {
+                html += `<li>❌ Backend API is NOT responding</li>`;
+                html += `<li>❌ Error: ${test1.error}</li>`;
+            }
+            
+            if (test4.success && test3.success) {
+                const improvement = ((test3.duration - test4.duration) / test3.duration * 100).toFixed(1);
+                html += `<li>✅ Compact mode is ${improvement}% faster</li>`;
+            }
+            
+            html += '</ul>';
+            
+            if (!test1.success) {
+                html += `
+                <h3>🔧 How to Fix:</h3>
+                <ol>
+                    <li>SSH to your server</li>
+                    <li>Run: <code>pm2 status</code></li>
+                    <li>If backend is stopped, run: <code>pm2 restart backend</code></li>
+                    <li>Check logs: <code>pm2 logs backend</code></li>
+                    <li>Look for "Server running" and "MongoDB Connected"</li>
+                </ol>
+                `;
+            } else if (test3.success && test4.success) {
+                html += `
+                <h3>✅ Recommendation:</h3>
+                <p>Your API is working! Deploy the optimized code to use compact mode for faster loading.</p>
+                <ol>
+                    <li>Pull latest code: <code>git pull origin main</code></li>
+                    <li>Install deps: <code>cd backend && npm install</code></li>
+                    <li>Restart: <code>pm2 restart backend</code></li>
+                </ol>
+                `;
+            }
+            
+            summaryContent.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
