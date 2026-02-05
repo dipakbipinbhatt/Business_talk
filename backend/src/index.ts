@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import mongoose from 'mongoose';
@@ -93,6 +94,17 @@ const limiter = rateLimit({
     legacyHeaders: false,
 });
 app.use('/api', limiter);
+
+// Compression middleware - compress all responses
+app.use(compression({
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) {
+            return false;
+        }
+        return compression.filter(req, res);
+    },
+    level: 6, // Compression level (0-9, 6 is default balance)
+}));
 
 // Body parsing - increased limit for Base64 images
 app.use(express.json({ limit: '10mb' }));

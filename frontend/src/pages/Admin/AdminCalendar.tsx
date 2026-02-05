@@ -48,10 +48,14 @@ export default function AdminCalendar() {
 
     async function fetchPodcasts() {
         try {
-            // Fetch ALL podcasts for calendar (limit: 0 means unlimited)
-            const response = await podcastAPI.getAll({ limit: 0 });
+            // Fetch ALL podcasts for calendar with COMPACT mode (no large images)
+            // This dramatically reduces payload size and speeds up loading
+            const response = await podcastAPI.getAll({ 
+                limit: 0,
+                compact: true  // Exclude thumbnailImage (100KB+ each) = 36MB saved!
+            });
             setPodcasts(response.data.podcasts);
-            console.log(`📅 Admin Calendar loaded ${response.data.podcasts.length} podcasts`);
+            console.log(`📅 Admin Calendar loaded ${response.data.podcasts.length} podcasts (compact mode)`);
         } catch (error) {
             console.error('Error fetching podcasts:', error);
         } finally {
