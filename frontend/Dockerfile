@@ -1,4 +1,4 @@
-# Frontend Dockerfile for Business Talk
+# Frontend Dockerfile for Business Talk - Performance Optimized
 FROM node:18-alpine AS builder
 
 # Set working directory
@@ -20,10 +20,13 @@ COPY . .
 # Build the application with environment variables
 RUN npm run build
 
-# Production stage with Nginx
+# Production stage with Nginx - Performance Optimized
 FROM nginx:alpine
 
-# Copy custom nginx config
+# Copy optimized nginx main configuration
+COPY nginx-main.conf /etc/nginx/nginx.conf
+
+# Copy site-specific nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built files from builder
@@ -32,8 +35,8 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy public files (banner, uploads, etc.)
 COPY --from=builder /app/public /usr/share/nginx/html
 
-# Expose port 80
-EXPOSE 80
+# Expose ports
+EXPOSE 80 443
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
