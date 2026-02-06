@@ -1,5 +1,5 @@
 # Production Docker Compose Configuration
-# Optimized for VPS deployment with nginx reverse proxy
+# Complete setup with nginx reverse proxy in Docker
 
 version: "3.8"
 
@@ -25,8 +25,6 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:
       - ./backend/uploads:/app/uploads
-    ports:
-      - "127.0.0.1:5000:5000"
     networks:
       - business-talk-network
     healthcheck:
@@ -59,11 +57,43 @@ services:
     restart: always
     environment:
       VITE_API_URL: /api
-    ports:
-      - "127.0.0.1:3000:80"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
+    networks:
+      - business-talk-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    image: nginx:alpine
+    container_name: business-talk-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-docker.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - frontend
     networks:
       - business-talk-network
     healthcheck:
@@ -75,11 +105,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 512M
-        reservations:
           cpus: "0.5"
           memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
     logging:
       driver: "json-file"
       options:

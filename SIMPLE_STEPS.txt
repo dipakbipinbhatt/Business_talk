@@ -1,0 +1,75 @@
+========================================
+🚀 SIMPLE 2-STEP DEPLOYMENT
+========================================
+
+Your build succeeded! Backend is created.
+Now follow these 2 simple steps:
+
+========================================
+STEP 1: Check and fix containers
+========================================
+
+Run this command:
+
+bash CHECK_AND_FIX.sh
+
+This will:
+- Check container status
+- Fix any issues
+- Start both containers
+- Test if they're working
+
+========================================
+STEP 2: Setup nginx
+========================================
+
+After Step 1 succeeds, run:
+
+sudo bash SETUP_NGINX.sh
+
+This will:
+- Configure nginx
+- Start nginx
+- Open firewall
+- Test your site
+
+========================================
+YOUR SITE WILL BE LIVE!
+========================================
+
+After both steps, your site will be at:
+  http://68.178.161.128
+  http://businesstalkwithdeepakbhatt.com
+
+========================================
+IF ISSUES:
+========================================
+
+View container logs:
+  docker logs business-talk-backend
+  docker logs business-talk-frontend
+
+View nginx logs:
+  sudo tail -50 /var/log/nginx/error.log
+
+Check status:
+  docker ps
+  sudo systemctl status nginx
+
+========================================
+QUICK COMMANDS:
+========================================
+
+# Check containers
+docker ps
+
+# Restart containers
+docker-compose -f docker-compose.prod.yml restart
+
+# Restart nginx
+sudo systemctl restart nginx
+
+# View all logs
+docker-compose -f docker-compose.prod.yml logs -f
+
+========================================
