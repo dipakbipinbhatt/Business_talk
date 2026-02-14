@@ -168,8 +168,8 @@ podcastSchema.pre('save', function (next) {
 });
 
 // Index for efficient querying and sorting
-podcastSchema.index({ category: 1, createdAt: -1 });  // Compound index for category filtering + sort
-podcastSchema.index({ createdAt: -1 });  // Index for sorting by creation date
+podcastSchema.index({ category: 1, scheduledDate: -1 });  // Compound index for category filtering + sort by scheduled date
+podcastSchema.index({ scheduledDate: -1 });  // Index for sorting by scheduled date
 podcastSchema.index({ episodeNumber: 1 });
 
 export const Podcast = mongoose.model<IPodcast>('Podcast', podcastSchema);

@@ -22,8 +22,8 @@ import contactRoutes from './routes/contact.routes';
 const app = express();
 
 app.set('trust proxy', 1);
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB handled in startServer
+// connectDB(); // Removed top-level call
 
 // Security middleware
 app.use(helmet({
@@ -53,7 +53,7 @@ app.use(cors({
 
         // Allow configured frontend URL (if set)
         if (config.cors.frontendUrl && config.cors.frontendUrl !== 'http://localhost:5173') {
-            if (origin === config.cors.frontendUrl || 
+            if (origin === config.cors.frontendUrl ||
                 origin.replace(/^https?:\/\//, '') === config.cors.frontendUrl.replace(/^https?:\/\//, '')) {
                 return callback(null, true);
             }
@@ -191,11 +191,23 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 // Start server
-const PORT = config.server.port;
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📁 Environment: ${config.server.nodeEnv}`);
-});
+// Start server
+const startServer = async () => {
+    try {
+        await connectDB();
+
+        const PORT = config.server.port;
+        app.listen(PORT, () => {
+            console.log(`🚀 Server running on http://localhost:${PORT}`);
+            console.log(`📁 Environment: ${config.server.nodeEnv}`);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();
 
 
 

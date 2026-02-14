@@ -23,7 +23,7 @@ export default function Podcasts() {
         document.title = "Business Talk | Podcasts";
     }, []);
 
-    // Initial fetch - ONLY PAST episodes with compact mode for faster loading
+    // Initial fetch - ONLY PAST episodes sorted by most recent scheduled date
     const fetchInitial = useCallback(async (query: string = '') => {
         setIsLoading(true);
         setError(null);
@@ -32,7 +32,7 @@ export default function Podcasts() {
             // thumbnailImage is included to show uploaded promotional images
             const limit = 2; // User requested: 2 at once
             const response = await podcastAPI.getAll({
-                category: 'past',
+                category: 'past', // Only show past episodes
                 limit,
                 page: 1,
                 search: query,
@@ -52,7 +52,7 @@ export default function Podcasts() {
         }
     }, []);
 
-    // Load More fetch - ONLY PAST episodes
+    // Load More fetch - ONLY PAST episodes sorted by most recent scheduled date
     const loadMoreItems = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
 
@@ -61,9 +61,9 @@ export default function Podcasts() {
             const nextPage = page + 1;
             const limit = 6; // User requested: batch of 6
 
-            // IMPORTANT: Only fetch PAST episodes - upcoming should NOT appear here
+            // Only fetch PAST episodes sorted by most recent scheduled date
             const response = await podcastAPI.getAll({
-                category: 'past',
+                category: 'past', // Only show past episodes
                 limit,
                 page: nextPage,
                 search: searchTerm,

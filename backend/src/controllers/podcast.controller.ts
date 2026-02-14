@@ -145,6 +145,9 @@ export const getAllPodcasts = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
+        // SELF-HEALING REMOVED: User requested manual control only.
+        // Podcasts will only change category if updated via Admin panel.
+
         const query: Record<string, unknown> = {};
         if (category && (category === 'upcoming' || category === 'past')) {
             query.category = category;
@@ -180,10 +183,17 @@ export const getAllPodcasts = async (req: AuthRequest, res: Response): Promise<v
         }
         // Default: Include all fields including images
 
+        // Determine sort order
+        // - Upcoming: Sort by date ASC (soonest first)
+        // - Past/All: Sort by date DESC (newest first)
+        const sort: any = (category === 'upcoming')
+            ? { scheduledDate: 1, episodeNumber: 1 }
+            : { scheduledDate: -1, episodeNumber: -1 };
+
         // Build the query - if limitNum is 0, don't apply limit (return all)
         let podcastQuery = Podcast.find(query)
             .select(Object.keys(selectFields).length > 0 ? selectFields : {})
-            .sort({ scheduledDate: -1, episodeNumber: -1 });
+            .sort(sort);
 
         // Only apply skip/limit if limitNum > 0
         if (limitNum > 0) {
@@ -196,6 +206,14 @@ export const getAllPodcasts = async (req: AuthRequest, res: Response): Promise<v
         ]);
 
         console.log(`✅ Returning ${podcasts.length} podcasts from database (total: ${total})`);
+
+        // Log first 3 episodes to verify sorting
+        if (podcasts.length > 0) {
+            console.log('   First 3 episodes:');
+            podcasts.slice(0, 3).forEach((p, i) => {
+                console.log(`   ${i + 1}. EP${p.episodeNumber} - ${new Date(p.scheduledDate).toLocaleDateString()} - ${p.title?.substring(0, 40)}`);
+            });
+        }
 
         res.json({
             podcasts,
