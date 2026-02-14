@@ -13,9 +13,9 @@ const connectWithRetry = async (retryCount = 0): Promise<typeof mongoose | void>
     try {
         const uri = config.mongodb.uri;
 
-        // For Node.js v24+ with OpenSSL 3.0, need to handle TLS differently
-        // The connection string should include retryWrites and w=majority
-
+        // Hide credentials for logging
+        const logUri = uri.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@');
+        if (retryCount === 0) {
             console.log('🔄 Attempting to connect to MongoDB...');
             console.log(`   URI: ${logUri}`);
         }
