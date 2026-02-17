@@ -28,6 +28,22 @@
     ],
     "exclude": [
         "node_modules",
-        "dist"
+        "dist",
+        "src/check-anup.ts",
+        "src/fix-categories.ts",
+        "src/fix-future-past.ts",
+        "src/force-fix.ts",
+        "src/revert-recent.ts",
+        "src/verify-sorting-fix.ts",
+        "src/add-all-upcoming.ts",
+        "src/add-upcoming.ts",
+        "src/check-and-fix-images.ts",
+        "src/fix-podcasts.ts",
+        "src/fix-upcoming-proper.ts",
+        "src/import-podcasts.ts",
+        "src/import-to-production.ts",
+        "src/populate-podcast-images.ts",
+        "src/test-db-connection.ts",
+        "src/scripts/**/*"
     ]
 }

@@ -5,7 +5,7 @@ import { config } from './config/env';
 
 async function checkAnup() {
     try {
-        await mongoose.connect(config.mongo.uri);
+        await mongoose.connect(config.mongodb.uri);
         console.log('Connected to DB');
 
         const podcast = await Podcast.findOne({
