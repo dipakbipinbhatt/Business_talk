@@ -1,0 +1,6 @@
+git rebase --abort
+git checkout main
+git reset --hard origin/main
+git clean -fd
+git status
+echo "Git is now clean and up to date!"
