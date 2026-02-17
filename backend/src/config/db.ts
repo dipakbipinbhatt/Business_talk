@@ -3,11 +3,13 @@ import { config } from './env';
 
 let isConnected = false;
 let disconnectTimer: NodeJS.Timeout | null = null;
+let heartbeatInterval: NodeJS.Timeout | null = null;
 
 // Configuration for connection handling
 const MAX_RETRIES = 5;
 const RETRY_INTERVAL = 5000; // 5 seconds
 const GRACE_PERIOD_MS = 30000; // 30 seconds to reconnect before killing process
+const HEARTBEAT_INTERVAL = 30000; // Check connection every 30 seconds
 
 const connectWithRetry = async (retryCount = 0): Promise<typeof mongoose | void> => {
     try {
@@ -21,18 +23,24 @@ const connectWithRetry = async (retryCount = 0): Promise<typeof mongoose | void>
         }
 
         const conn = await mongoose.connect(uri, {
-            serverSelectionTimeoutMS: 5000,
+            serverSelectionTimeoutMS: 10000, // Increased from 5s to 10s
             socketTimeoutMS: 45000,
             maxPoolSize: 10,
-            // Mongoose 6+ defaults are good, but explicit is fine
+            minPoolSize: 2, // Keep minimum connections alive
             retryWrites: true,
             w: 'majority',
+            // Auto-reconnect settings
+            autoIndex: true,
+            family: 4, // Use IPv4, skip trying IPv6
         });
 
         // Initialize connection state
         isConnected = true;
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
         console.log(`   Database: ${conn.connection.name}`);
+
+        // Start heartbeat monitoring
+        startHeartbeat();
 
         return conn;
 
@@ -56,6 +64,44 @@ const connectWithRetry = async (retryCount = 0): Promise<typeof mongoose | void>
             }
         }
     }
+};
+
+// Heartbeat to keep connection alive and detect issues early
+const startHeartbeat = () => {
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+    }
+
+    heartbeatInterval = setInterval(async () => {
+        try {
+            // Ping the database with a simple operation
+            await mongoose.connection.db?.admin().ping();
+            
+            // Update connection state
+            const state = mongoose.connection.readyState;
+            if (state === 1) {
+                isConnected = true;
+            } else {
+                console.warn(`⚠️ MongoDB connection state: ${state} (1=connected, 0=disconnected, 2=connecting, 3=disconnecting)`);
+                isConnected = false;
+            }
+        } catch (error: any) {
+            console.error('❌ Heartbeat failed:', error.message);
+            isConnected = false;
+            
+            // Try to reconnect if in production
+            if (config.server.nodeEnv === 'production') {
+                console.log('🔄 Attempting to reconnect...');
+                try {
+                    await mongoose.connect(config.mongodb.uri);
+                    console.log('✅ Reconnected successfully');
+                    isConnected = true;
+                } catch (reconnectError: any) {
+                    console.error('❌ Reconnection failed:', reconnectError.message);
+                }
+            }
+        }
+    }, HEARTBEAT_INTERVAL);
 };
 
 export const connectDB = async (): Promise<void> => {
@@ -121,7 +167,46 @@ mongoose.connection.on('connected', () => {
     }
 });
 
+mongoose.connection.on('reconnected', () => {
+    console.log('🔄 MongoDB reconnected successfully');
+    isConnected = true;
+    
+    // Clear the disconnect timer
+    if (disconnectTimer) {
+        clearTimeout(disconnectTimer);
+        disconnectTimer = null;
+    }
+});
+
 mongoose.connection.on('error', (err) => {
     console.error('❌ MongoDB error:', err.message);
+    isConnected = false;
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Received SIGINT, closing MongoDB connection...');
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+    }
+    if (disconnectTimer) {
+        clearTimeout(disconnectTimer);
+    }
+    await mongoose.connection.close();
+    console.log('✅ MongoDB connection closed');
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('\n🛑 Received SIGTERM, closing MongoDB connection...');
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+    }
+    if (disconnectTimer) {
+        clearTimeout(disconnectTimer);
+    }
+    await mongoose.connection.close();
+    console.log('✅ MongoDB connection closed');
+    process.exit(0);
 });
 

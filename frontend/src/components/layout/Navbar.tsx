@@ -7,7 +7,7 @@ import logoImage from '../../assets/logo.jpg';
 const navLinks = [
     { name: 'HOME', path: '/' },
     { name: 'ABOUT', path: '/about' },
-    { name: 'PODCASTS', path: '/podcasts' },
+    { name: 'PODCAST LIBRARY', path: '/podcasts' },
     { name: 'BLOG', path: '/blog' },
     { name: 'CONTACT', path: '/contact' },
 ];
