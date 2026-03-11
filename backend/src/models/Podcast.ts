@@ -5,17 +5,20 @@ export interface IGuest {
     title: string;
     institution?: string;
     image?: string;
+    gender?: string;
 }
 
 export interface IPodcast extends Document {
     title: string;
     description: string;
     category: 'upcoming' | 'past';
+    podcastType: string;
     // Legacy single guest fields (kept for backward compatibility)
     guestName?: string;
     guestTitle?: string;
     guestInstitution?: string;
     guestImage?: string;
+    guestGender?: string;
     // New multi-guest support
     guests: IGuest[];
     episodeNumber: number;
@@ -52,6 +55,9 @@ const guestSchema = new Schema<IGuest>({
     image: {
         type: String,
     },
+    gender: {
+        type: String,
+    }
 }, { _id: false });
 
 const podcastSchema = new Schema<IPodcast>(
@@ -67,6 +73,9 @@ const podcastSchema = new Schema<IPodcast>(
             type: String,
             enum: ['upcoming', 'past'],
             required: [true, 'Category is required'],
+        },
+        podcastType: {
+            type: String,
         },
         // Legacy single guest fields (optional for backward compatibility)
         guestName: {
@@ -85,6 +94,10 @@ const podcastSchema = new Schema<IPodcast>(
         guestImage: {
             type: String,
             default: '',
+        },
+        guestGender: {
+            type: String,
+            default: ''
         },
         // New multi-guest support
         guests: {

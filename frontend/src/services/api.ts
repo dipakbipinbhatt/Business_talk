@@ -112,6 +112,13 @@ export const podcastAPI = {
     },
 };
 
+// Podcast Type API
+export const podcastTypeAPI = {
+    getAll: () => api.get<PodcastType[]>('/podcast-types'),
+    create: (name: string) => api.post<{ message: string; category: PodcastType }>('/podcast-types', { name }),
+    delete: (id: string) => api.delete(`/podcast-types/${id}`),
+};
+
 // Blog API
 export const blogAPI = {
     getAll: (params?: { category?: string; search?: string; page?: number; limit?: number }) =>
@@ -124,7 +131,6 @@ export const blogAPI = {
     getAdminAll: () => api.get('/blogs/admin/all'),
 
     getStats: () => api.get('/blogs/admin/stats'),
-
 
     create: (data: BlogInput) => api.post('/blogs', data),
 
@@ -145,6 +151,7 @@ export interface Podcast {
     guestTitle?: string;
     guestInstitution?: string;
     guestImage?: string;
+    guestGender?: string;
     // New multi-guest support
     guests?: Guest[];
     episodeNumber: number;
@@ -168,17 +175,26 @@ export interface Guest {
     title: string;
     institution?: string;
     image?: string;
+    gender?: string;
+}
+
+export interface PodcastType {
+    _id: string;
+    name: string;
+    slug: string;
 }
 
 export interface PodcastInput {
     title?: string;
     description?: string;
     category: 'upcoming' | 'past';
+    podcastType?: string;
     // Legacy single guest fields (for backward compatibility)
     guestName?: string;
     guestTitle?: string;
     guestInstitution?: string;
     guestImage?: string;
+    guestGender?: string;
     // New multi-guest support
     guests?: Guest[];
     episodeNumber?: number;
@@ -311,8 +327,6 @@ export const analyticsAPI = {
 };
 
 export default api;
-
-
 
 // Contact Message Types
 export interface ContactMessage {

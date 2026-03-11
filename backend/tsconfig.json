@@ -41,7 +41,7 @@
         "src/fix-podcasts.ts",
         "src/fix-upcoming-proper.ts",
         "src/import-podcasts.ts",
-        "src/import-to-production.ts",
+        "src/import-to-production.ts", // CHANGE HERE
         "src/populate-podcast-images.ts",
         "src/test-db-connection.ts",
         "src/scripts/**/*"

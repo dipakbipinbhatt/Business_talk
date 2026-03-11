@@ -18,6 +18,7 @@ import mongoRoutes from './routes/mongodb.routes';
 import settingsRoutes from './routes/settings.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import contactRoutes from './routes/contact.routes';
+import podcastTypesRoutes from './routes/podcastType.route';
 
 const app = express();
 
@@ -178,6 +179,7 @@ app.use('/api/mongodb', mongoRoutes); // Added mongodb routes
 app.use('/api/settings', settingsRoutes); // Site settings routes
 app.use('/api/analytics', analyticsRoutes); // Analytics routes
 app.use('/api/contact', contactRoutes); // Contact form routes
+app.use('/api/podcast-types', podcastTypesRoutes);
 
 // 404 handler
 app.use((_req, res) => {

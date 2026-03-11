@@ -11,6 +11,7 @@ import {
     Eye,
     EyeOff,
     Plus,
+    Upload
 } from 'lucide-react';
 import { blogAPI, BlogInput, categoryAPI, Category } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
@@ -263,7 +264,7 @@ export default function BlogForm() {
                                 'link', 'image', 'video'
                             ]}
                             className="bg-white rounded-lg"
-                            style={{ height: '300px', marginBottom: '50px' }}
+                            style={{ height: '300px', marginBottom: '100px' }}
                             placeholder="Write your blog content here..."
                         />
                     </div>
@@ -332,7 +333,7 @@ export default function BlogForm() {
                     </div>
 
                     {/* Image and Read Time */}
-                    <div className="grid md:grid-cols-2 gap-4">
+                    {/* <div className="grid md:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 <Image className="w-4 h-4 inline mr-2" />
@@ -347,6 +348,57 @@ export default function BlogForm() {
                                 placeholder="https://example.com/image.jpg"
                             />
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Read Time
+                            </label>
+                            <input
+                                type="text"
+                                name="readTime"
+                                value={formData.readTime}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
+                                placeholder="5 min read"
+                            />
+                        </div>
+                    </div> */}
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="relative">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <Image className="w-4 h-4 inline mr-2" />
+                                Image URL or Upload
+                            </label>
+
+                            <input
+                                type="url"
+                                name="image"
+                                value={formData.image}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
+                                placeholder="Paste image URL or upload"
+                            />
+
+                            <label className="absolute right-3 top-[38px] cursor-pointer">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setFormData({ ...formData, image: reader.result as string});
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }
+                                    }}
+                                />
+                                <Upload className="w-5 h-5 text-gray-500 hover:text-maroon-600" />
+                            </label>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Read Time

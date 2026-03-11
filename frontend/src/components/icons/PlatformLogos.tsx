@@ -5,6 +5,7 @@ import appleLogo from '../../assets/platforms/apple-podcasts.png';
 import amazonLogo from '../../assets/platforms/amazon-music.png';
 import audibleLogo from '../../assets/platforms/audible.jpg';
 import soundcloudLogo from '../../assets/platforms/soundcloud.png';
+import researchLogo from '../../assets/platforms/research.png';
 
 // Map platform to image
 const PLATFORM_IMAGES = {
@@ -14,6 +15,7 @@ const PLATFORM_IMAGES = {
     amazon: amazonLogo,
     audible: audibleLogo,
     soundcloud: soundcloudLogo,
+    research: researchLogo,
 };
 
 interface PlatformButtonProps {

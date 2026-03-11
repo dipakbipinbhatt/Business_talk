@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Save, Loader2, Upload, X, Plus, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { podcastAPI, PodcastInput } from '../../services/api';
+import { podcastAPI, PodcastInput, podcastTypeAPI } from '../../services/api';
 import { useAuthStore, usePodcastStore } from '../../store/useStore';
 
 interface Guest {
@@ -11,6 +11,12 @@ interface Guest {
     title: string;
     institution?: string;
     image?: string;
+    gender?: string;
+}
+
+interface PodcastType {
+    _id: string;
+    name: string;
 }
 
 export default function PodcastForm() {
@@ -21,8 +27,15 @@ export default function PodcastForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
-    const [guests, setGuests] = useState<Guest[]>([{ name: '', title: '', institution: '', image: '' }]);
+    const [guests, setGuests] = useState<Guest[]>([{ name: '', title: '', institution: '', image: '', gender: '' }]);
     const [category, setCategory] = useState<'upcoming' | 'past'>('upcoming');
+
+    // Podcast Types state
+    const [podcastTypes, setPodcastTypes] = useState<PodcastType[]>([]);
+    const [showTypePopover, setShowTypePopover] = useState(false);
+    const [newTypeName, setNewTypeName] = useState('');
+    const [isAddingType, setIsAddingType] = useState(false);
+    const popoverRef = useRef<HTMLDivElement>(null);
 
     const isEditing = !!id;
 
@@ -48,6 +61,55 @@ export default function PodcastForm() {
             setCategory(watchedCategory as 'upcoming' | 'past');
         }
     }, [watchedCategory]);
+
+    // Close popover when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+                setShowTypePopover(false);
+                setNewTypeName('');
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Fetch podcast types on mount
+    useEffect(() => {
+        const fetchPodcastTypes = async () => {
+            try {
+                // const response = await podcastAPI.getPodcastTypes();
+                const response = await podcastTypeAPI.getAll();
+                
+                setPodcastTypes(response.data);
+            } catch (error) {
+                console.error('Error fetching podcast types:', error);
+            }
+        };
+        fetchPodcastTypes();
+    }, []);
+
+    // Add Podcast Type
+    const addPodcastType = async () => {
+        const trimmed = newTypeName.trim();
+        if (!trimmed) return;
+
+        setIsAddingType(true);
+        try {
+            // const response = await podcastAPI.createPodcastType({ name: trimmed });
+            const response = await podcastTypeAPI.create(trimmed);
+            const created: PodcastType = response.data.category;
+            setPodcastTypes((prev) => [...prev, created]);
+            setValue('podcastType', created.name);
+            setNewTypeName('');
+            setShowTypePopover(false);
+        } catch (error) {
+            console.error('Error creating podcast type:', error);
+            alert('Failed to add podcast type');
+        } finally {
+            setIsAddingType(false);
+        }
+    };
 
     // Guest management functions
     const addGuest = () => {
@@ -105,7 +167,6 @@ export default function PodcastForm() {
                     if (podcast.guests && podcast.guests.length > 0) {
                         setGuests(podcast.guests);
                     } else if (podcast.guestName && podcast.guestTitle) {
-                        // Convert legacy single guest to array
                         setGuests([{
                             name: podcast.guestName,
                             title: podcast.guestTitle,
@@ -134,38 +195,23 @@ export default function PodcastForm() {
     }, [isAuthenticated, isEditing, id, navigate, setValue]);
 
     const onSubmit = async (data: PodcastInput) => {
-        // Validate based on category
         if (data.category === 'upcoming') {
             if (!thumbnailPreview && !data.thumbnailImage) {
                 alert('Thumbnail is required for upcoming podcasts');
                 return;
             }
         } else if (data.category === 'past') {
-            // Validate all required fields for past podcasts
-            if (!data.title) {
-                alert('Title is required for past podcasts');
-                return;
-            }
-            if (!data.description) {
-                alert('Description is required for past podcasts');
-                return;
-            }
-            if (!data.episodeNumber) {
-                alert('Episode number is required for past podcasts');
-                return;
-            }
-            if (!data.scheduledDate) {
-                alert('Scheduled date is required for past podcasts');
-                return;
-            }
-            // Check if at least one guest has name and title
+            if (!data.title) { alert('Title is required for past podcasts'); return; }
+            if (!data.description) { alert('Description is required for past podcasts'); return; }
+            if (!data.episodeNumber) { alert('Episode number is required for past podcasts'); return; }
+            if (!data.scheduledDate) { alert('Scheduled date is required for past podcasts'); return; }
+
             const hasValidGuest = guests.some(g => g.name && g.title);
             if (!hasValidGuest) {
                 alert('At least one guest with name and title is required for past podcasts');
                 return;
             }
 
-            // Warn if no thumbnail is provided (will fall back to guest image or YouTube thumbnail)
             if (!thumbnailPreview && !data.thumbnailImage) {
                 const confirmProceed = window.confirm(
                     '⚠️ Warning: No episode thumbnail uploaded.\n\n' +
@@ -178,17 +224,14 @@ export default function PodcastForm() {
 
         setIsLoading(true);
         try {
-            // Filter out empty guests
             const validGuests = guests.filter(g => g.name && g.title);
 
-            // Process tags if it's a string
             const processedData = {
                 ...data,
                 tags: typeof data.tags === 'string'
                     ? (data.tags as string).split(',').map((t: string) => t.trim()).filter(Boolean)
                     : data.tags,
                 guests: validGuests,
-                // Maintain backward compatibility - use first guest for legacy fields
                 guestName: validGuests[0]?.name || '',
                 guestTitle: validGuests[0]?.title || '',
                 guestInstitution: validGuests[0]?.institution || '',
@@ -313,9 +356,7 @@ export default function PodcastForm() {
                                 </label>
                                 <input
                                     type="number"
-                                    {...register('episodeNumber', {
-                                        valueAsNumber: true,
-                                    })}
+                                    {...register('episodeNumber', { valueAsNumber: true })}
                                     className="input-field"
                                     placeholder="e.g., 310"
                                 />
@@ -347,6 +388,88 @@ export default function PodcastForm() {
                                     className="input-field"
                                     placeholder="10:00 AM IST"
                                 />
+                            </div>
+
+                            {/* Podcast Type - Dropdown + Add New */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Podcast Type
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    {/* Dropdown */}
+                                    <select
+                                        {...register('podcastType')}
+                                        className="input-field flex-1"
+                                    >
+                                        <option value="">Select type...</option>
+                                        {podcastTypes.map((type) => (
+                                            <option key={type._id} value={type.name}>
+                                                {type.name}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {/* Add New Type Button + Popover */}
+                                    <div className="relative" ref={popoverRef}>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowTypePopover((prev) => !prev);
+                                                setNewTypeName('');
+                                            }}
+                                            title="Add new podcast type"
+                                            className="flex items-center justify-center w-10 h-10 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors flex-shrink-0"
+                                        >
+                                            <Plus className="w-5 h-5" />
+                                        </button>
+
+                                        {/* Popover */}
+                                        {showTypePopover && (
+                                            <div className="absolute right-0 top-12 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-4">
+                                                {/* Arrow */}
+                                                <div className="absolute -top-2 right-3 w-4 h-4 bg-white border-l border-t border-gray-200 rotate-45" />
+
+                                                <p className="text-sm font-semibold text-gray-800 mb-3">
+                                                    Add New Podcast Type
+                                                </p>
+                                                <input
+                                                    type="text"
+                                                    value={newTypeName}
+                                                    onChange={(e) => setNewTypeName(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addPodcastType())}
+                                                    placeholder="e.g., Research/Book"
+                                                    autoFocus
+                                                    className="input-field mb-3 text-sm"
+                                                />
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowTypePopover(false);
+                                                            setNewTypeName('');
+                                                        }}
+                                                        className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={addPodcastType}
+                                                        disabled={isAddingType || !newTypeName.trim()}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-maroon-700 text-white text-sm rounded-lg hover:bg-maroon-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                    >
+                                                        {isAddingType ? (
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Plus className="w-3.5 h-3.5" />
+                                                        )}
+                                                        Add
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -403,7 +526,6 @@ export default function PodcastForm() {
                                         />
                                     </label>
                                 </div>
-                                {/* URL Input for Thumbnail */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Or paste Image URL
@@ -503,7 +625,7 @@ export default function PodcastForm() {
                                                 />
                                             </div>
 
-                                            <div className="md:col-span-2">
+                                            <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                                     Institution
                                                 </label>
@@ -513,6 +635,22 @@ export default function PodcastForm() {
                                                     className="input-field"
                                                     placeholder="Harvard Business School"
                                                 />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Gender
+                                                </label>
+                                                <select
+                                                    value={guest.gender || ''}
+                                                    onChange={(e) => updateGuest(index, 'gender', e.target.value)}
+                                                    className="input-field"
+                                                >
+                                                    <option value="">Select Gender</option>
+                                                    <option value="male">Male</option>
+                                                    <option value="female">Female</option>
+                                                    <option value="other">Other</option>
+                                                </select>
                                             </div>
 
                                             <div className="md:col-span-2">
@@ -581,69 +719,28 @@ export default function PodcastForm() {
                             <h2 className="text-lg font-semibold text-gray-900 mb-4">Platform Links</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        YouTube URL
-                                    </label>
-                                    <input
-                                        {...register('youtubeUrl')}
-                                        className="input-field"
-                                        placeholder="https://youtube.com/watch?v=..."
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">YouTube URL</label>
+                                    <input {...register('youtubeUrl')} className="input-field" placeholder="https://youtube.com/watch?v=..." />
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Spotify URL
-                                    </label>
-                                    <input
-                                        {...register('spotifyUrl')}
-                                        className="input-field"
-                                        placeholder="https://open.spotify.com/..."
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Spotify URL</label>
+                                    <input {...register('spotifyUrl')} className="input-field" placeholder="https://open.spotify.com/..." />
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Apple Podcasts URL
-                                    </label>
-                                    <input
-                                        {...register('applePodcastUrl')}
-                                        className="input-field"
-                                        placeholder="https://podcasts.apple.com/..."
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Apple Podcasts URL</label>
+                                    <input {...register('applePodcastUrl')} className="input-field" placeholder="https://podcasts.apple.com/..." />
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Amazon Music URL
-                                    </label>
-                                    <input
-                                        {...register('amazonMusicUrl')}
-                                        className="input-field"
-                                        placeholder="https://music.amazon.com/..."
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Amazon Music URL</label>
+                                    <input {...register('amazonMusicUrl')} className="input-field" placeholder="https://music.amazon.com/..." />
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Audible URL
-                                    </label>
-                                    <input
-                                        {...register('audibleUrl')}
-                                        className="input-field"
-                                        placeholder="https://www.audible.in/podcast/..."
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Audible URL</label>
+                                    <input {...register('audibleUrl')} className="input-field" placeholder="https://www.audible.in/podcast/..." />
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        SoundCloud URL
-                                    </label>
-                                    <input
-                                        {...register('soundcloudUrl')}
-                                        className="input-field"
-                                        placeholder="https://soundcloud.com/business_talk/..."
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">SoundCloud URL</label>
+                                    <input {...register('soundcloudUrl')} className="input-field" placeholder="https://soundcloud.com/business_talk/..." />
                                 </div>
                             </div>
                         </div>
