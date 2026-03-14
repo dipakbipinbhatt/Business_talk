@@ -9,7 +9,7 @@ import appleLogo from '../../assets/platforms/apple-podcasts.png';
 import amazonLogo from '../../assets/platforms/amazon-music.png';
 import audibleLogo from '../../assets/platforms/audible.jpg';
 import soundcloudLogo from '../../assets/platforms/soundcloud.png';
-// import researchLogo from '../../assets/platforms/research.png';
+import researchLogo from '../../assets/platforms/research.png';
 
 interface PodcastCardProps {
     podcast: Podcast;
@@ -516,11 +516,11 @@ export default function PodcastCard({ podcast, variant = 'grid' }: PodcastCardPr
                                 <img src={soundcloudLogo} alt="SoundCloud" className="w-full h-full object-contain" />
                             </a>
                         )}
-                        {/* {podcast.researchUrl && (
+                        {podcast.researchUrl && (
                             <a href={podcast.researchUrl} target="_blank" rel="noopener noreferrer" className="w-7 h-7 sm:w-9 sm:h-9 bg-white border border-gray-200 rounded-lg p-1 sm:p-1.5 hover:scale-110 transition-transform shadow-sm" title="Go through Research Papers">
                                 <img src={researchLogo} alt="Research" className="w-full h-full object-contain" />
                             </a>
-                        )} */}
+                        )}
                     </div>
                 </div>
             </div>

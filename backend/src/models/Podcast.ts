@@ -30,6 +30,7 @@ export interface IPodcast extends Document {
     amazonMusicUrl?: string;
     audibleUrl?: string;
     soundcloudUrl?: string;
+    researchUrl?: string;
     thumbnailImage?: string;
     tags: string[];
     isRescheduled: boolean;
@@ -135,6 +136,10 @@ const podcastSchema = new Schema<IPodcast>(
             trim: true,
         },
         soundcloudUrl: {
+            type: String,
+            trim: true,
+        },
+        researchUrl: {
             type: String,
             trim: true,
         },

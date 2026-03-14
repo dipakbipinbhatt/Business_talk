@@ -163,6 +163,7 @@ export interface Podcast {
     amazonMusicUrl?: string;
     audibleUrl?: string;
     soundcloudUrl?: string;
+    researchUrl?: string;
     thumbnailImage?: string;
     tags: string[];
     isRescheduled: boolean;
@@ -206,6 +207,7 @@ export interface PodcastInput {
     amazonMusicUrl?: string;
     audibleUrl?: string;
     soundcloudUrl?: string;
+    researchUrl?: string;
     thumbnailImage?: string;
     tags?: string[];
     isRescheduled?: boolean;

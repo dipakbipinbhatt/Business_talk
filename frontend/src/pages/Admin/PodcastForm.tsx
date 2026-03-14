@@ -742,6 +742,10 @@ export default function PodcastForm() {
                                     <label className="block text-sm font-medium text-gray-700 mb-2">SoundCloud URL</label>
                                     <input {...register('soundcloudUrl')} className="input-field" placeholder="https://soundcloud.com/business_talk/..." />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Research URL</label>
+                                    <input {...register('researchUrl')} className="input-field" placeholder="https://yourResearchUrl.com/..." />
+                                </div>
                             </div>
                         </div>
 
