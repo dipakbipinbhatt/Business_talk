@@ -1,15 +1,17 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Loader2 } from 'lucide-react';
+import { Search, Filter, Loader2, Download } from 'lucide-react';
 import { podcastAPI, Podcast } from '../services/api';
 import StayUpdated from '../components/layout/StayUpdated';
 import PodcastCard from '../components/podcast/PodcastCard';
+import * as XLSX from 'xlsx';
 
 export default function Podcasts() {
     const [podcasts, setPodcasts] = useState<Podcast[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isExporting, setIsExporting] = useState(false);
 
     // Pagination state
     const [page, setPage] = useState(1);
@@ -29,10 +31,9 @@ export default function Podcasts() {
         setError(null);
         setPage(1);
         try {
-            // thumbnailImage is included to show uploaded promotional images
-            const limit = 2; // User requested: 2 at once
+            const limit = 2;
             const response = await podcastAPI.getAll({
-                category: 'past', // Only show past episodes
+                category: 'past',
                 limit,
                 page: 1,
                 search: query,
@@ -43,7 +44,9 @@ export default function Podcasts() {
             setPodcasts(newPodcasts);
 
             // If we got fewer than limit, we reached the end
-            setHasMore(newPodcasts.length >= limit && response.data.pagination.page < response.data.pagination.pages);
+            // setHasMore(newPodcasts.length >= limit && response.data.pagination.page < response.data.pagination.pages);
+            setHasMore(response.data.pagination.page < response.data.pagination.pages);
+
         } catch (err) {
             console.error('Error fetching podcasts:', err);
             setError('Failed to load podcasts. Please try again later.');
@@ -52,18 +55,18 @@ export default function Podcasts() {
         }
     }, []);
 
-    // Load More fetch - ONLY PAST episodes sorted by most recent scheduled date
+    // Load More fetch
     const loadMoreItems = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
 
         setIsLoadingMore(true);
         try {
             const nextPage = page + 1;
-            const limit = 6; // User requested: batch of 6
+            const limit = 6;
 
             // Only fetch PAST episodes sorted by most recent scheduled date
             const response = await podcastAPI.getAll({
-                category: 'past', // Only show past episodes
+                category: 'past',
                 limit,
                 page: nextPage,
                 search: searchTerm,
@@ -82,6 +85,89 @@ export default function Podcasts() {
             setIsLoadingMore(false);
         }
     }, [page, hasMore, searchTerm, isLoadingMore]);
+
+    // Export ALL past podcasts to Excel
+    const handleExportExcel = async () => {
+        setIsExporting(true);
+        try {
+            // Fetch all past podcasts (no limit)
+            const response = await podcastAPI.getAll({
+                category: 'past',
+            });
+            const allPodcasts: Podcast[] = response.data.podcasts || [];
+
+            // Build rows — one row per guest (or one row if no guests)
+            const rows = allPodcasts.flatMap((podcast) => {
+                const guestList = podcast.guests && podcast.guests.length > 0
+                    ? podcast.guests
+                    : [{
+                        name: podcast.guestName || '',
+                        title: podcast.guestTitle || '',
+                        institution: podcast.guestInstitution || '',
+                        image: podcast.guestImage || '',
+                        gender: podcast.guestGender || '',
+                    }];
+
+                return guestList.map((guest, guestIndex) => ({
+                    'Episode #': podcast.episodeNumber || '',
+                    'Title': podcast.title || '',
+                    'Description': podcast.description || '',
+                    'Scheduled Date': podcast.scheduledDate
+                        ? new Date(podcast.scheduledDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                        : '',
+                    'Scheduled Time': podcast.scheduledTime || '',
+                    'Guest #': guestIndex + 1,
+                    'Guest Name': guest.name || '',
+                    'Guest Title': guest.title || '',
+                    'Guest Institution': guest.institution || '',
+                    'Guest Gender': guest.gender || '',
+                    'Tags': Array.isArray(podcast.tags) ? podcast.tags.join(', ') : '',
+                    'YouTube URL': podcast.youtubeUrl || '',
+                    'Spotify URL': podcast.spotifyUrl || '',
+                    'Apple Podcasts URL': podcast.applePodcastUrl || '',
+                    'Amazon Music URL': podcast.amazonMusicUrl || '',
+                    'Audible URL': podcast.audibleUrl || '',
+                    'SoundCloud URL': podcast.soundcloudUrl || '',
+                }));
+            });
+
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(rows);
+
+            // Column widths
+            ws['!cols'] = [
+                { wch: 12 },  // Episode #
+                { wch: 50 },  // Title
+                { wch: 70 },  // Description
+                { wch: 18 },  // Scheduled Date
+                { wch: 18 },  // Scheduled Time
+                { wch: 10 },  // Guest #
+                { wch: 30 },  // Guest Name
+                { wch: 35 },  // Guest Title
+                { wch: 35 },  // Guest Institution
+                { wch: 14 },  // Guest Gender
+                { wch: 30 },  // Tags
+                { wch: 40 },  // YouTube URL
+                { wch: 40 },  // Spotify URL
+                { wch: 40 },  // Apple Podcasts URL
+                { wch: 40 },  // Amazon Music URL
+                { wch: 40 },  // Audible URL
+                { wch: 40 },  // SoundCloud URL
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, 'Podcast Episodes');
+
+            // Download
+            const today = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `BusinessTalk_Podcasts_${today}.xlsx`);
+        } catch (err) {
+            console.error('Error exporting podcasts:', err);
+            alert('Failed to export podcasts. Please try again.');
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     // Debounce search
     useEffect(() => {
@@ -140,18 +226,41 @@ export default function Podcasts() {
                 </div>
             </section>
 
-            {/* Search Section */}
+            {/* Search + Download Section */}
             <section className="py-6 px-4 bg-white border-b border-gray-200 sticky top-16 z-40">
                 <div className="max-w-7xl mx-auto">
-                    <div className="relative max-w-xl mx-auto">
-                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search by guest name, title, or topic..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 focus:border-maroon-500 focus:ring-2 focus:ring-maroon-200 transition-all outline-none"
-                        />
+                    <div className="flex flex-col sm:flex-row items-center gap-3 max-w-3xl mx-auto">
+                        {/* Search Bar */}
+                        <div className="relative flex-1 w-full">
+                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search by guest name, title, or topic..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 focus:border-maroon-500 focus:ring-2 focus:ring-maroon-200 transition-all outline-none"
+                            />
+                        </div>
+
+                        {/* Download Button */}
+                            <button
+                                    onClick={handleExportExcel}
+                                    disabled={isExporting}
+                                    className="flex items-center gap-2 px-5 py-3 bg-maroon-700 hover:bg-maroon-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors whitespace-nowrap shadow-sm"
+                                >
+                                {isExporting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <span>Exporting...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download className="w-4 h-4" />
+                                        <span>Download Podcasts</span>
+                                    </>
+                                )}
+                            </button>
+                        
                     </div>
                 </div>
             </section>

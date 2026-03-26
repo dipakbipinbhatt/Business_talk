@@ -26,7 +26,9 @@ export default function Home() {
     const pastObserverRef = useRef<IntersectionObserver | null>(null);
     const pastLoadMoreRef = useRef<HTMLDivElement | null>(null);
 
-
+    // Guards to prevent intersection observer firing before initial load completes
+    const pastInitialLoadDone = useRef(false);
+    const upcomingInitialLoadDone = useRef(false);
 
     const [error, setError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
@@ -66,6 +68,7 @@ export default function Home() {
         if (!settingsLoaded) return;
 
         const fetchUpcoming = async () => {
+            upcomingInitialLoadDone.current = false; // reset guard before fetch
             setIsUpcomingLoading(true);
             console.log(`[Home] Fetching upcoming podcasts - page 1, limit ${settings.upcomingInitialLoad}`);
             try {
@@ -82,6 +85,7 @@ export default function Home() {
                 console.error('[Home] Error fetching upcoming podcasts:', err);
             } finally {
                 setIsUpcomingLoading(false);
+                upcomingInitialLoadDone.current = true; // mark initial load complete
             }
         };
 
@@ -119,7 +123,13 @@ export default function Home() {
 
         upcomingObserverRef.current = new IntersectionObserver(
             (entries) => {
-                if (entries[0].isIntersecting && !isUpcomingLoading && !isLoadingMoreUpcoming && upcomingPodcasts.length < upcomingTotal) {
+                if (
+                    entries[0].isIntersecting &&
+                    upcomingInitialLoadDone.current && // guard: only after initial load
+                    !isUpcomingLoading &&
+                    !isLoadingMoreUpcoming &&
+                    upcomingPodcasts.length < upcomingTotal
+                ) {
                     loadMoreUpcoming();
                 }
             },
@@ -140,6 +150,7 @@ export default function Home() {
         if (!settingsLoaded) return;
 
         const fetchPast = async () => {
+            pastInitialLoadDone.current = false; // reset guard before fetch
             setIsPastLoading(true);
             setError(null);
             console.log(`[Home] Fetching past podcasts - page 1, limit ${settings.pastInitialLoad}`);
@@ -160,6 +171,7 @@ export default function Home() {
                 setError('Failed to load podcasts. Please try again later.');
             } finally {
                 setIsPastLoading(false);
+                pastInitialLoadDone.current = true; // mark initial load complete
             }
         };
 
@@ -198,7 +210,13 @@ export default function Home() {
 
         pastObserverRef.current = new IntersectionObserver(
             (entries) => {
-                if (entries[0].isIntersecting && !isPastLoading && !isLoadingMorePast && pastPodcasts.length < pastTotal) {
+                if (
+                    entries[0].isIntersecting &&
+                    pastInitialLoadDone.current && // guard: only after initial load
+                    !isPastLoading &&
+                    !isLoadingMorePast &&
+                    pastPodcasts.length < pastTotal
+                ) {
                     loadMorePast();
                 }
             },
