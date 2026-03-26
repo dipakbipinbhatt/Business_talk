@@ -384,7 +384,7 @@ export const uploadImage = async (req: AuthRequest, res: Response): Promise<void
         const imageUrl = `data:image/jpeg;base64,${base64}`;
 
         // Delete temp file
-        // fs.unlinkSync(req.file.path); //CHANGE HERE
+        fs.unlinkSync(req.file.path); //CHANGE HERE
 
         console.log(`✅ Image compressed and converted to Base64 (${Math.round(base64.length / 1024)}KB)`);
 
