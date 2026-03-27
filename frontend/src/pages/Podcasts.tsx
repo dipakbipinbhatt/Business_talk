@@ -4,14 +4,14 @@ import { Search, Filter, Loader2, Download } from 'lucide-react';
 import { podcastAPI, Podcast } from '../services/api';
 import StayUpdated from '../components/layout/StayUpdated';
 import PodcastCard from '../components/podcast/PodcastCard';
-import * as XLSX from 'xlsx';
+// import * as XLSX from 'xlsx';
 
 export default function Podcasts() {
     const [podcasts, setPodcasts] = useState<Podcast[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isExporting, setIsExporting] = useState(false);
+    // const [isExporting, setIsExporting] = useState(false);
 
     // Pagination state
     const [page, setPage] = useState(1);
@@ -87,87 +87,87 @@ export default function Podcasts() {
     }, [page, hasMore, searchTerm, isLoadingMore]);
 
     // Export ALL past podcasts to Excel
-    const handleExportExcel = async () => {
-        setIsExporting(true);
-        try {
-            // Fetch all past podcasts (no limit)
-            const response = await podcastAPI.getAll({
-                category: 'past',
-            });
-            const allPodcasts: Podcast[] = response.data.podcasts || [];
+    // const handleExportExcel = async () => {
+    //     setIsExporting(true);
+    //     try {
+    //         // Fetch all past podcasts (no limit)
+    //         const response = await podcastAPI.getAll({
+    //             category: 'past',
+    //         });
+    //         const allPodcasts: Podcast[] = response.data.podcasts || [];
 
-            // Build rows — one row per guest (or one row if no guests)
-            const rows = allPodcasts.flatMap((podcast) => {
-                const guestList = podcast.guests && podcast.guests.length > 0
-                    ? podcast.guests
-                    : [{
-                        name: podcast.guestName || '',
-                        title: podcast.guestTitle || '',
-                        institution: podcast.guestInstitution || '',
-                        image: podcast.guestImage || '',
-                        gender: podcast.guestGender || '',
-                    }];
+    //         // Build rows — one row per guest (or one row if no guests)
+    //         const rows = allPodcasts.flatMap((podcast) => {
+    //             const guestList = podcast.guests && podcast.guests.length > 0
+    //                 ? podcast.guests
+    //                 : [{
+    //                     name: podcast.guestName || '',
+    //                     title: podcast.guestTitle || '',
+    //                     institution: podcast.guestInstitution || '',
+    //                     image: podcast.guestImage || '',
+    //                     gender: podcast.guestGender || '',
+    //                 }];
 
-                return guestList.map((guest, guestIndex) => ({
-                    'Episode #': podcast.episodeNumber || '',
-                    'Title': podcast.title || '',
-                    'Description': podcast.description || '',
-                    'Scheduled Date': podcast.scheduledDate
-                        ? new Date(podcast.scheduledDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                        : '',
-                    'Scheduled Time': podcast.scheduledTime || '',
-                    'Guest #': guestIndex + 1,
-                    'Guest Name': guest.name || '',
-                    'Guest Title': guest.title || '',
-                    'Guest Institution': guest.institution || '',
-                    'Guest Gender': guest.gender || '',
-                    'Tags': Array.isArray(podcast.tags) ? podcast.tags.join(', ') : '',
-                    'YouTube URL': podcast.youtubeUrl || '',
-                    'Spotify URL': podcast.spotifyUrl || '',
-                    'Apple Podcasts URL': podcast.applePodcastUrl || '',
-                    'Amazon Music URL': podcast.amazonMusicUrl || '',
-                    'Audible URL': podcast.audibleUrl || '',
-                    'SoundCloud URL': podcast.soundcloudUrl || '',
-                }));
-            });
+    //             return guestList.map((guest, guestIndex) => ({
+    //                 'Episode #': podcast.episodeNumber || '',
+    //                 'Title': podcast.title || '',
+    //                 'Description': podcast.description || '',
+    //                 'Scheduled Date': podcast.scheduledDate
+    //                     ? new Date(podcast.scheduledDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    //                     : '',
+    //                 'Scheduled Time': podcast.scheduledTime || '',
+    //                 'Guest #': guestIndex + 1,
+    //                 'Guest Name': guest.name || '',
+    //                 'Guest Title': guest.title || '',
+    //                 'Guest Institution': guest.institution || '',
+    //                 'Guest Gender': guest.gender || '',
+    //                 'Tags': Array.isArray(podcast.tags) ? podcast.tags.join(', ') : '',
+    //                 'YouTube URL': podcast.youtubeUrl || '',
+    //                 'Spotify URL': podcast.spotifyUrl || '',
+    //                 'Apple Podcasts URL': podcast.applePodcastUrl || '',
+    //                 'Amazon Music URL': podcast.amazonMusicUrl || '',
+    //                 'Audible URL': podcast.audibleUrl || '',
+    //                 'SoundCloud URL': podcast.soundcloudUrl || '',
+    //             }));
+    //         });
 
-            // Create workbook
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(rows);
+    //         // Create workbook
+    //         const wb = XLSX.utils.book_new();
+    //         const ws = XLSX.utils.json_to_sheet(rows);
 
-            // Column widths
-            ws['!cols'] = [
-                { wch: 12 },  // Episode #
-                { wch: 50 },  // Title
-                { wch: 70 },  // Description
-                { wch: 18 },  // Scheduled Date
-                { wch: 18 },  // Scheduled Time
-                { wch: 10 },  // Guest #
-                { wch: 30 },  // Guest Name
-                { wch: 35 },  // Guest Title
-                { wch: 35 },  // Guest Institution
-                { wch: 14 },  // Guest Gender
-                { wch: 30 },  // Tags
-                { wch: 40 },  // YouTube URL
-                { wch: 40 },  // Spotify URL
-                { wch: 40 },  // Apple Podcasts URL
-                { wch: 40 },  // Amazon Music URL
-                { wch: 40 },  // Audible URL
-                { wch: 40 },  // SoundCloud URL
-            ];
+    //         // Column widths
+    //         ws['!cols'] = [
+    //             { wch: 12 },  // Episode #
+    //             { wch: 50 },  // Title
+    //             { wch: 70 },  // Description
+    //             { wch: 18 },  // Scheduled Date
+    //             { wch: 18 },  // Scheduled Time
+    //             { wch: 10 },  // Guest #
+    //             { wch: 30 },  // Guest Name
+    //             { wch: 35 },  // Guest Title
+    //             { wch: 35 },  // Guest Institution
+    //             { wch: 14 },  // Guest Gender
+    //             { wch: 30 },  // Tags
+    //             { wch: 40 },  // YouTube URL
+    //             { wch: 40 },  // Spotify URL
+    //             { wch: 40 },  // Apple Podcasts URL
+    //             { wch: 40 },  // Amazon Music URL
+    //             { wch: 40 },  // Audible URL
+    //             { wch: 40 },  // SoundCloud URL
+    //         ];
 
-            XLSX.utils.book_append_sheet(wb, ws, 'Podcast Episodes');
+    //         XLSX.utils.book_append_sheet(wb, ws, 'Podcast Episodes');
 
-            // Download
-            const today = new Date().toISOString().split('T')[0];
-            XLSX.writeFile(wb, `BusinessTalk_Podcasts_${today}.xlsx`);
-        } catch (err) {
-            console.error('Error exporting podcasts:', err);
-            alert('Failed to export podcasts. Please try again.');
-        } finally {
-            setIsExporting(false);
-        }
-    };
+    //         // Download
+    //         const today = new Date().toISOString().split('T')[0];
+    //         XLSX.writeFile(wb, `BusinessTalk_Podcasts_${today}.xlsx`);
+    //     } catch (err) {
+    //         console.error('Error exporting podcasts:', err);
+    //         alert('Failed to export podcasts. Please try again.');
+    //     } finally {
+    //         setIsExporting(false);
+    //     }
+    // };
 
     // Debounce search
     useEffect(() => {
@@ -243,7 +243,7 @@ export default function Podcasts() {
                         </div>
 
                         {/* Download Button */}
-                            <button
+                            {/* <button
                                     onClick={handleExportExcel}
                                     disabled={isExporting}
                                     className="flex items-center gap-2 px-5 py-3 bg-maroon-700 hover:bg-maroon-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors whitespace-nowrap shadow-sm"
@@ -259,7 +259,7 @@ export default function Podcasts() {
                                         <span>Download Podcasts</span>
                                     </>
                                 )}
-                            </button>
+                            </button> */}
                         
                     </div>
                 </div>

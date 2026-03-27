@@ -31,13 +31,15 @@ import {
     Database,
     ExternalLink,
     Mail,
-    MailOpen
+    MailOpen,
+    Download
 } from 'lucide-react';
-import { podcastAPI, blogAPI, Blog, importAPI, aboutUsAPI, AboutUsContent, renderAPI, systemHealthAPI, settingsAPI, SiteSettings, mongoAPI, contactAPI, ContactMessage, ContactStats } from '../../services/api';
+import { podcastAPI, blogAPI, Blog, importAPI, aboutUsAPI, AboutUsContent, renderAPI, systemHealthAPI, settingsAPI, SiteSettings, mongoAPI, contactAPI, ContactMessage, ContactStats, Podcast } from '../../services/api';
 import { useAuthStore, usePodcastStore } from '../../store/useStore';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import AnalyticsDashboard from '../../components/AnalyticsDashboard';
+import * as XLSX from 'xlsx';
 
 type ActiveTab = 'podcasts' | 'blogs' | 'import' | 'about' | 'settings' | 'calendar' | 'inbox';
 
@@ -47,6 +49,9 @@ export default function AdminDashboard() {
     const { user, isAuthenticated, logout } = useAuthStore();
     const { podcasts, setPodcasts, removePodcast } = usePodcastStore();
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
 
     // Determine active tab from URL query param or path
     const getInitialTab = () => {
@@ -415,20 +420,20 @@ export default function AdminDashboard() {
 
     // Sample JSON for Import
     const SAMPLE_JSON = `[
-  {
-    "title": "Episode Title Here",
-    "guestName": "Dr. Guest Name",
-    "guestTitle": "Professor of Subject",
-    "guestInstitution": "University Name",
-    "youtubeUrl": "https://www.youtube.com/watch?v=...",
-    "category": "past",
-    "scheduledDate": "2024-12-20",
-    "scheduledTime": "10:00 PM IST",
-    "episodeNumber": 309,
-    "description": "Episode description",
-    "tags": ["tag1", "tag2"]
-  }
-]`;
+        {
+            "title": "Episode Title Here",
+            "guestName": "Dr. Guest Name",
+            "guestTitle": "Professor of Subject",
+            "guestInstitution": "University Name",
+            "youtubeUrl": "https://www.youtube.com/watch?v=...",
+            "category": "past",
+            "scheduledDate": "2024-12-20",
+            "scheduledTime": "10:00 PM IST",
+            "episodeNumber": 309,
+            "description": "Episode description",
+            "tags": ["tag1", "tag2"]
+        }
+    ]`;
 
     // Fetch podcasts with server-side pagination
     const fetchPodcasts = async (page: number, search: string, category: 'all' | 'upcoming' | 'past') => {
@@ -669,6 +674,90 @@ export default function AdminDashboard() {
         });
     };
 
+    const handleExportExcel = async (exportCategory: 'all' | 'upcoming' | 'past') => {
+            setIsExporting(true);
+            setExportDropdownOpen(false);
+            try {
+                // Fetch podcasts filtered by selected category (no pagination limit)
+                const params: { category?: string } = {};
+                if (exportCategory !== 'all') params.category = exportCategory;
+                const response = await podcastAPI.getAll(params);
+                const allPodcasts: Podcast[] = response.data.podcasts || [];
+    
+                // Build rows — one row per guest (or one row if no guests)
+                const rows = allPodcasts.flatMap((podcast) => {
+                    const guestList = podcast.guests && podcast.guests.length > 0
+                        ? podcast.guests
+                        : [{
+                            name: podcast.guestName || '',
+                            title: podcast.guestTitle || '',
+                            institution: podcast.guestInstitution || '',
+                            image: podcast.guestImage || '',
+                            gender: podcast.guestGender || '',
+                        }];
+    
+                    return guestList.map((guest, guestIndex) => ({
+                        'Episode #': podcast.episodeNumber || '',
+                        'Title': podcast.title || '',
+                        'Description': podcast.description || '',
+                        'Scheduled Date': podcast.scheduledDate
+                            ? new Date(podcast.scheduledDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                            : '',
+                        'Scheduled Time': podcast.scheduledTime || '',
+                        'Guest #': guestIndex + 1,
+                        'Guest Name': guest.name || '',
+                        'Guest Title': guest.title || '',
+                        'Guest Institution': guest.institution || '',
+                        'Guest Gender': guest.gender || '',
+                        'Tags': Array.isArray(podcast.tags) ? podcast.tags.join(', ') : '',
+                        'YouTube URL': podcast.youtubeUrl || '',
+                        'Spotify URL': podcast.spotifyUrl || '',
+                        'Apple Podcasts URL': podcast.applePodcastUrl || '',
+                        'Amazon Music URL': podcast.amazonMusicUrl || '',
+                        'Audible URL': podcast.audibleUrl || '',
+                        'SoundCloud URL': podcast.soundcloudUrl || '',
+                    }));
+                });
+    
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(rows);
+    
+                // Column widths
+                ws['!cols'] = [
+                    { wch: 12 },  // Episode #
+                    { wch: 50 },  // Title
+                    { wch: 70 },  // Description
+                    { wch: 18 },  // Scheduled Date
+                    { wch: 18 },  // Scheduled Time
+                    { wch: 10 },  // Guest #
+                    { wch: 30 },  // Guest Name
+                    { wch: 35 },  // Guest Title
+                    { wch: 35 },  // Guest Institution
+                    { wch: 14 },  // Guest Gender
+                    { wch: 30 },  // Tags
+                    { wch: 40 },  // YouTube URL
+                    { wch: 40 },  // Spotify URL
+                    { wch: 40 },  // Apple Podcasts URL
+                    { wch: 40 },  // Amazon Music URL
+                    { wch: 40 },  // Audible URL
+                    { wch: 40 },  // SoundCloud URL
+                ];
+    
+                XLSX.utils.book_append_sheet(wb, ws, 'Podcast Episodes');
+    
+                // Download
+                const today = new Date().toISOString().split('T')[0];
+                const categoryLabel = exportCategory === 'all' ? 'All' : exportCategory.charAt(0).toUpperCase() + exportCategory.slice(1);
+                XLSX.writeFile(wb, `BusinessTalk_Podcasts_${categoryLabel}_${today}.xlsx`);
+            } catch (err) {
+                console.error('Error exporting podcasts:', err);
+                alert('Failed to export podcasts. Please try again.');
+            } finally {
+                setIsExporting(false);
+            }
+        };
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -861,6 +950,55 @@ export default function AdminDashboard() {
                                             <Plus className="w-4 h-4" />
                                             <span>Add Podcast</span>
                                         </Link>
+                                        {/* Download Section */}
+                                        <div className="relative">
+                                            {/* Trigger Button */}
+                                            <button
+                                                onClick={() => setExportDropdownOpen(prev => !prev)}
+                                                disabled={isExporting}
+                                                className="flex items-center space-x-2 px-4 py-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors whitespace-nowrap shadow-sm"
+                                            >
+                                                {isExporting ? (
+                                                    <>
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                        <span>Exporting...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Download className="w-4 h-4" />
+                                                        <span>Export</span>
+                                                        <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${exportDropdownOpen ? 'rotate-90' : ''}`} />
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            {/* Dropdown Menu */}
+                                            {exportDropdownOpen && (
+                                                <>
+                                                    {/* Backdrop — closes dropdown on outside click */}
+                                                    <div
+                                                        className="fixed inset-0 z-10"
+                                                        onClick={() => setExportDropdownOpen(false)}
+                                                    />
+                                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-20 overflow-hidden">
+                                                        {([
+                                                            { label: 'All Podcasts',  value: 'all'      as const },
+                                                            { label: 'Upcoming Only', value: 'upcoming' as const },
+                                                            { label: 'Past Only',     value: 'past'     as const },
+                                                        ]).map(({ label, value }) => (
+                                                            <button
+                                                                key={value}
+                                                                onClick={() => handleExportExcel(value)}
+                                                                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-maroon-50 hover:text-maroon-700 transition-colors text-left"
+                                                            >
+                                                                <Download className="w-4 h-4 shrink-0" />
+                                                                {label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 {/* Search Bar */}
