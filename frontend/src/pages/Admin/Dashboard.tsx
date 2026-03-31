@@ -32,7 +32,8 @@ import {
     ExternalLink,
     Mail,
     MailOpen,
-    Download
+    Download,
+    // ArrowUpIcon,
 } from 'lucide-react';
 import { podcastAPI, blogAPI, Blog, importAPI, aboutUsAPI, AboutUsContent, renderAPI, systemHealthAPI, settingsAPI, SiteSettings, mongoAPI, contactAPI, ContactMessage, ContactStats, Podcast } from '../../services/api';
 import { useAuthStore, usePodcastStore } from '../../store/useStore';
@@ -49,7 +50,7 @@ export default function AdminDashboard() {
     const { user, isAuthenticated, logout } = useAuthStore();
     const { podcasts, setPodcasts, removePodcast } = usePodcastStore();
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [_searchTerm, _setSearchTerm] = useState('');
     const [isExporting, setIsExporting] = useState(false);
     const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
 
@@ -826,16 +827,6 @@ export default function AdminDashboard() {
                         Calendar
                     </Link>
                     <button
-                        onClick={() => setActiveTab('import')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'import'
-                            ? 'bg-maroon-700 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        <Upload className="w-5 h-5" />
-                        Import
-                    </button>
-                    <button
                         onClick={() => setActiveTab('about')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'about'
                             ? 'bg-maroon-700 text-white'
@@ -869,6 +860,16 @@ export default function AdminDashboard() {
                                 {contactStats.unread}
                             </span>
                         )}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('import')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'import'
+                            ? 'bg-maroon-700 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                            }`}
+                    >
+                        <Upload className="w-5 h-5" />
+                        Import
                     </button>
                 </div>
 
@@ -961,7 +962,7 @@ export default function AdminDashboard() {
                                                 {isExporting ? (
                                                     <>
                                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                                        <span>Exporting...</span>
+                                                        <span>Exporting</span>
                                                     </>
                                                 ) : (
                                                     <>
@@ -1352,114 +1353,6 @@ export default function AdminDashboard() {
                                 </div>
                             )}
                         </div>
-                    </div>
-                )}
-
-                {/* Import Tab */}
-                {activeTab === 'import' && (
-                    <div className="tab-content-wrapper">
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                            <FileJson className="w-6 h-6 text-maroon-700" />
-                            Import Podcasts
-                        </h2>
-
-                        {/* Sample JSON Format */}
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-3">JSON Format</h3>
-                            <p className="text-gray-600 text-sm mb-3">
-                                Paste a JSON array of podcasts to import. Each podcast should have the following fields:
-                            </p>
-                            <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
-                                <pre className="text-sm font-mono whitespace-pre-wrap">{SAMPLE_JSON}</pre>
-                            </div>
-                            <div className="flex gap-3 mt-3">
-                                <button
-                                    onClick={handleCopySample}
-                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                                >
-                                    <Copy className="w-4 h-4" />
-                                    Copy Sample
-                                </button>
-                                <button
-                                    onClick={() => setJsonData(SAMPLE_JSON)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors"
-                                >
-                                    Load Sample
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* File Upload */}
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Upload JSON File (optional)</h3>
-                            <input
-                                type="file"
-                                accept=".json"
-                                onChange={handleFileUpload}
-                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-maroon-700 file:text-white hover:file:bg-maroon-800"
-                            />
-                        </div>
-
-                        {/* JSON Input */}
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Or paste JSON directly</h3>
-                            <textarea
-                                value={jsonData}
-                                onChange={(e) => setJsonData(e.target.value)}
-                                className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
-                                placeholder="Paste your JSON here..."
-                            />
-                        </div>
-
-                        {/* Error Message */}
-                        {importError && (
-                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-                                <XCircle className="w-5 h-5" />
-                                {importError}
-                            </div>
-                        )}
-
-                        {/* Success Result */}
-                        {importResult && (
-                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
-                                    <CheckCircle className="w-5 h-5" />
-                                    Import Complete
-                                </div>
-                                <p className="text-sm text-green-600">
-                                    Successfully imported {importResult.success} podcasts.
-                                    {importResult.failed > 0 && ` Failed: ${importResult.failed}`}
-                                </p>
-                                {importResult.errors.length > 0 && (
-                                    <ul className="mt-2 text-sm text-red-600 list-disc list-inside">
-                                        {importResult.errors.map((err, i) => (
-                                            <li key={i}>{err}</li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Import Button */}
-                        <button
-                            onClick={handleImport}
-                            disabled={importLoading || !jsonData.trim()}
-                            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                        >
-                            {importLoading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Importing...
-                                </>
-                            ) : (
-                                <>
-                                    <Upload className="w-5 h-5" />
-                                    Import Podcasts
-                                </>
-                            )}
-                        </button>
-                    </div>
                     </div>
                 )}
 
@@ -1973,6 +1866,13 @@ export default function AdminDashboard() {
                                         <p className="text-sm text-gray-500">Messages from your contact form</p>
                                     </div>
                                     <div className="flex items-center space-x-2">
+                                        {/* <button
+                                            // onClick={handleRefresh}
+                                            className="px-3 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg"
+                                        >
+                                            <ArrowUpIcon  className="w-5 h-5" />
+                                        </button> */}
+
                                         {(['all', 'unread', 'read', 'archived'] as const).map((f) => (
                                             <button
                                                 key={f}
@@ -2045,6 +1945,114 @@ export default function AdminDashboard() {
                                 )}
                             </div>
                         </div>
+                    </div>
+                )}
+                
+                {/* Import Tab */}
+                {activeTab === 'import' && (
+                    <div className="tab-content-wrapper">
+                    <div className="bg-white rounded-xl shadow-sm p-6">
+                        <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                            <FileJson className="w-6 h-6 text-maroon-700" />
+                            Import Podcasts
+                        </h2>
+
+                        {/* Sample JSON Format */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-3">JSON Format</h3>
+                            <p className="text-gray-600 text-sm mb-3">
+                                Paste a JSON array of podcasts to import. Each podcast should have the following fields:
+                            </p>
+                            <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                                <pre className="text-sm font-mono whitespace-pre-wrap">{SAMPLE_JSON}</pre>
+                            </div>
+                            <div className="flex gap-3 mt-3">
+                                <button
+                                    onClick={handleCopySample}
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                    <Copy className="w-4 h-4" />
+                                    Copy Sample
+                                </button>
+                                <button
+                                    onClick={() => setJsonData(SAMPLE_JSON)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors"
+                                >
+                                    Load Sample
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* File Upload */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Upload JSON File (optional)</h3>
+                            <input
+                                type="file"
+                                accept=".json"
+                                onChange={handleFileUpload}
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-maroon-700 file:text-white hover:file:bg-maroon-800"
+                            />
+                        </div>
+
+                        {/* JSON Input */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Or paste JSON directly</h3>
+                            <textarea
+                                value={jsonData}
+                                onChange={(e) => setJsonData(e.target.value)}
+                                className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-maroon-500 focus:border-transparent"
+                                placeholder="Paste your JSON here..."
+                            />
+                        </div>
+
+                        {/* Error Message */}
+                        {importError && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                                <XCircle className="w-5 h-5" />
+                                {importError}
+                            </div>
+                        )}
+
+                        {/* Success Result */}
+                        {importResult && (
+                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
+                                    <CheckCircle className="w-5 h-5" />
+                                    Import Complete
+                                </div>
+                                <p className="text-sm text-green-600">
+                                    Successfully imported {importResult.success} podcasts.
+                                    {importResult.failed > 0 && ` Failed: ${importResult.failed}`}
+                                </p>
+                                {importResult.errors.length > 0 && (
+                                    <ul className="mt-2 text-sm text-red-600 list-disc list-inside">
+                                        {importResult.errors.map((err, i) => (
+                                            <li key={i}>{err}</li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Import Button */}
+                        <button
+                            onClick={handleImport}
+                            disabled={importLoading || !jsonData.trim()}
+                            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        >
+                            {importLoading ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Importing...
+                                </>
+                            ) : (
+                                <>
+                                    <Upload className="w-5 h-5" />
+                                    Import Podcasts
+                                </>
+                            )}
+                        </button>
+                    </div>
                     </div>
                 )}
 

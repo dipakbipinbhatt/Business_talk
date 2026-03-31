@@ -13,6 +13,8 @@ import {
     FileText,
     Upload,
     Settings,
+    Mail,
+    Info,
 } from 'lucide-react';
 import { podcastAPI, Podcast } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
@@ -176,18 +178,11 @@ export default function AdminCalendar() {
                         Calendar
                     </div>
                     <Link
-                        to="/admin/dashboard?tab=import"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Upload className="w-5 h-5" />
-                        Import
-                    </Link>
-                    <Link
                         to="/admin/dashboard?tab=about"
                         className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
                         title="Manage About Us Content"
                     >
-                        <FileText className="w-5 h-5" />
+                        <Info className="w-5 h-5" />
                         About Us
                     </Link>
                     <Link
@@ -196,6 +191,20 @@ export default function AdminCalendar() {
                     >
                         <Settings className="w-5 h-5" />
                         Settings
+                    </Link>                    
+                    <Link
+                        to="/admin/dashboard?tab=inbox"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <Mail className="w-5 h-5" />
+                        Inbox
+                    </Link>
+                    <Link
+                        to="/admin/dashboard?tab=import"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <Upload className="w-5 h-5" />
+                        Import
                     </Link>
                 </div>
                 

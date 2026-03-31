@@ -182,18 +182,22 @@ export default function Blog() {
                         >
                             <div className="grid md:grid-cols-2">
                                 <div className="aspect-video md:aspect-auto">
-                                    <img
-                                        src={featuredPost.image || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800'}
-                                        alt={featuredPost.title}
-                                        className="w-full h-full object-cover"
-                                    />
+                                    <Link to={`/blog/${featuredPost._id}`}> 
+                                        <img
+                                            src={featuredPost.image || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800'}
+                                            alt={featuredPost.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </Link>
                                 </div>
                                 <div className="p-8 md:p-12 flex flex-col justify-center">
                                     <span className="inline-block px-3 py-1 bg-maroon-100 text-maroon-700 text-sm font-medium rounded-full mb-4 w-fit">
                                         Featured
                                     </span>
                                     <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                                        {featuredPost.title}
+                                        <Link to={`/blog/${featuredPost._id}`} className="hover:text-maroon-800">
+                                            {featuredPost.title}
+                                        </Link>
                                     </h2>
                                     <p className="text-gray-600 mb-6 leading-relaxed">
                                         {featuredPost.excerpt}

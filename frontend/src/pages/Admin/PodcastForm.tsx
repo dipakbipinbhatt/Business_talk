@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Loader2, Upload, X, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Upload, X, Plus, Trash2, LogOut } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { podcastAPI, PodcastInput, podcastTypeAPI } from '../../services/api';
 import { useAuthStore, usePodcastStore } from '../../store/useStore';
+import logoImage from '../../assets/logo.jpg';
 
 interface Guest {
     name: string;
@@ -22,7 +23,7 @@ interface PodcastType {
 export default function PodcastForm() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, logout } = useAuthStore();
     const { addPodcast, updatePodcast } = usePodcastStore();
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
@@ -278,24 +279,81 @@ export default function PodcastForm() {
         );
     }
 
+    const handleLogout = () => {
+        logout();
+        navigate('/admin/login');
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white shadow-sm">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center h-16">
-                        <Link
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-16">
+                        <div className="flex items-center space-x-3">
+                            <img
+                                src={logoImage}
+                                alt="Business Talk Logo"
+                                className="h-10 w-auto"
+                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
+                            />
+                            <div>
+                                <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
+                                <p className="text-xs text-gray-500">Welcome, {user?.name}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <Link
+                                to="/"
+                                className="text-sm text-gray-600 hover:text-gray-900"
+                            >
+                                View Site
+                            </Link>
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                <span>Logout</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            {/* <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"> */}
+                {/* <div className="flex items-center h-16"> */}
+                        {/* <Link
                             to="/admin/dashboard"
                             className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
                         >
                             <ArrowLeft className="w-5 h-5" />
                             <span>Back to Dashboard</span>
-                        </Link>
-                    </div>
-                </div>
-            </header>
+                        </Link>*/}
+
+                    {/* <button
+                        onClick={() => navigate("/admin/dashboard")}
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>Back to Dashboard</span>
+                    </button> */}
+                {/* </div> */}
+            {/* </div> */}
+            
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center h-16">
+                        <button
+                            onClick={() => navigate("/admin/dashboard")}
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 border border-red-600 hover:bg-red-50 rounded-lg"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                            <span>Back to Dashboard</span>
+                        </button>
+                    </div>
+                </div>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}

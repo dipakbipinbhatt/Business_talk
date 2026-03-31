@@ -132,14 +132,11 @@ export default function BlogPost() {
     return (
         <div className="min-h-screen bg-white">
             {/* Hero Image */}
-            <div className="relative h-96 md:h-[500px]">
-                <img
-                    src={post.image || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1200'}
-                    alt={post.title}
-                    className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16">
+            {/* <div className="relative h-96 md:h-[350px]"> */}
+            <div className="relative py-5 md:py-12">
+                <div className="absolute inset-0 bg-gradient-to-t from-maroon-900 to-red-900" />
+                {/* <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16"> */}
+                <div className="relative p-8 md:p-16">
                     <div className="max-w-4xl mx-auto">
                         <span className="inline-block px-4 py-1 bg-maroon-600 text-white text-sm font-medium rounded-full mb-4">
                             {post.category}
@@ -226,10 +223,16 @@ export default function BlogPost() {
 
                 {/* Excerpt */}
                 {post.excerpt && (
-                    <p className="text-xl text-gray-600 mb-8 italic border-l-4 border-maroon-700 pl-4">
+                    <p className="text-xl text-gray-60 italic border-l-4 border-maroon-700 pl-4">
                         {post.excerpt}
                     </p>
                 )}
+
+                <img
+                    src={post.image || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1200'}
+                    alt={post.title}
+                    className="w-[850px] h-[550px] py-12 object-cover"
+                />                
 
                 {/* Content */}
                 <motion.div
