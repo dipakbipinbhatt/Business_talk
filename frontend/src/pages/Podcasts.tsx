@@ -17,6 +17,7 @@ export default function Podcasts() {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [totalCount, setTotalCount] = useState<number | null>(null);
 
     const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +47,7 @@ export default function Podcasts() {
             // If we got fewer than limit, we reached the end
             // setHasMore(newPodcasts.length >= limit && response.data.pagination.page < response.data.pagination.pages);
             setHasMore(response.data.pagination.page < response.data.pagination.pages);
+            setTotalCount(response.data.pagination?.total ?? null);
 
         } catch (err) {
             console.error('Error fetching podcasts:', err);
@@ -206,10 +208,19 @@ export default function Podcasts() {
                                 <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
                                     <div className="flex-1 min-w-0">
                                         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                                            {searchTerm ? 'Search Results' : `Latest Episodes`}
+                                            {searchTerm ? 'Search Results' : 'Latest Episodes'}
+                                            {!searchTerm && totalCount !== null && (
+                                                <span className="ml-3 text-xl font-semibold text-white bg-maroon-700 px-3 py-1 rounded-full align-middle">
+                                                    {totalCount}
+                                                </span>
+                                            )}
                                         </h2>
                                         <p className="text-gray-600 mt-1 text-sm sm:text-base">
-                                            {searchTerm ? `Found ${podcasts.length} matching episodes` : 'Watch our conversations'}
+                                            {searchTerm
+                                                ? `Found ${podcasts.length} matching episodes`
+                                                : totalCount !== null
+                                                    ? `${totalCount} episodes in total`
+                                                    : 'Watch our conversations'}
                                         </p>
                                     </div>
                                 </div>
