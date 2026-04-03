@@ -160,6 +160,20 @@ export default function AdminCalendar() {
                 {/* Tab Navigation - Fixed height to prevent layout shifts */}
                 <div className="flex space-x-4 mb-8" style={{ minHeight: '52px' }}>
                     <Link
+                        to="/admin/dashboard?tab=analytics"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <Mail className="w-5 h-5" />
+                        Analytics
+                    </Link>
+                    <Link
+                        to="/admin/dashboard?tab=inbox"
+                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
+                    >
+                        <Mail className="w-5 h-5" />
+                        Inbox
+                    </Link>
+                    <Link
                         to="/admin/dashboard?tab=podcasts"
                         className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
                     >
@@ -191,13 +205,6 @@ export default function AdminCalendar() {
                     >
                         <Settings className="w-5 h-5" />
                         Settings
-                    </Link>                    
-                    <Link
-                        to="/admin/dashboard?tab=inbox"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Mail className="w-5 h-5" />
-                        Inbox
                     </Link>
                     <Link
                         to="/admin/dashboard?tab=import"

@@ -42,7 +42,7 @@ import 'react-quill/dist/quill.snow.css';
 import AnalyticsDashboard from '../../components/AnalyticsDashboard';
 import * as XLSX from 'xlsx';
 
-type ActiveTab = 'podcasts' | 'blogs' | 'import' | 'about' | 'settings' | 'calendar' | 'inbox';
+type ActiveTab = 'podcasts' | 'blogs' | 'import' | 'about' | 'settings' | 'calendar' | 'inbox' | 'analytics';
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
     const getInitialTab = () => {
         const params = new URLSearchParams(location.search);
         const tabParam = params.get('tab');
-        if (tabParam && ['podcasts', 'blogs', 'import', 'about', 'settings', 'calendar', 'inbox'].includes(tabParam)) {
+        if (tabParam && ['podcasts', 'blogs', 'import', 'about', 'settings', 'calendar', 'inbox', 'analytics'].includes(tabParam)) {
             return tabParam as ActiveTab;
         }
 
@@ -103,6 +103,11 @@ export default function AdminDashboard() {
         pastBatchSize: 6,
         googleAnalyticsId: '',
     });
+
+    // GA4 Property ID (numeric) -- stored in localStorage, used by AnalyticsDashboard
+    const [ga4PropertyId, setGa4PropertyId] = useState<string>(
+        () => localStorage.getItem('ga4PropertyId') || ''
+    );
 
     // MongoDB Atlas Cluster State
     const [mongoCluster, setMongoCluster] = useState<{ name: string; mongoDBVersion: string; stateName: string; providerSettings?: { regionName: string } } | null>(null);
@@ -800,6 +805,31 @@ export default function AdminDashboard() {
                 {/* Tab Navigation - Fixed height to prevent layout shifts */}
                 <div className="flex space-x-4 mb-8" style={{ minHeight: '52px' }}>
                     <button
+                        onClick={() => setActiveTab('analytics')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'analytics'
+                            ? 'bg-maroon-700 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                            }`}
+                    >
+                        <BarChart3 className="w-5 h-5" />
+                        Analytics
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('inbox')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors relative ${activeTab === 'inbox'
+                            ? 'bg-maroon-700 text-white'
+                            : 'bg-white text-gray-600 hover:bg-gray-50'
+                            }`}
+                    >
+                        <Mail className="w-5 h-5" />
+                        Inbox
+                        {contactStats.unread > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                                {contactStats.unread}
+                            </span>
+                        )}
+                    </button>
+                    <button
                         onClick={() => setActiveTab('podcasts')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'podcasts'
                             ? 'bg-maroon-700 text-white'
@@ -847,21 +877,6 @@ export default function AdminDashboard() {
                         Settings
                     </button>
                     <button
-                        onClick={() => setActiveTab('inbox')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors relative ${activeTab === 'inbox'
-                            ? 'bg-maroon-700 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        <Mail className="w-5 h-5" />
-                        Inbox
-                        {contactStats.unread > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                                {contactStats.unread}
-                            </span>
-                        )}
-                    </button>
-                    <button
                         onClick={() => setActiveTab('import')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'import'
                             ? 'bg-maroon-700 text-white'
@@ -875,6 +890,18 @@ export default function AdminDashboard() {
 
                 {/* Content wrapper with fixed height to prevent jumping */}
                 <div className="relative" style={{ minHeight: '800px' }}>
+                
+                {/* Analytics Tab */}
+                {activeTab === 'analytics' && (
+                    <div className="tab-content-wrapper">
+                        <AnalyticsDashboard
+                            measurementId={episodeSettings.googleAnalyticsId}
+                            propertyId={ga4PropertyId}
+                            compact={false}
+                        />
+                    </div>
+                )}
+
                 {/* Podcasts Tab */}
                 {activeTab === 'podcasts' && (
                     <div className="tab-content-wrapper">
@@ -1733,28 +1760,49 @@ export default function AdminDashboard() {
                                 Track website traffic and user behavior.
                             </p>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Measurement ID (G-XXXXXXXXXX)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={episodeSettings.googleAnalyticsId || ''}
-                                    onChange={(e) => setEpisodeSettings(prev => ({
-                                        ...prev,
-                                        googleAnalyticsId: e.target.value
-                                    }))}
-                                    placeholder="G-XXXXXXXXXX"
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono"
-                                />
-                                <p className="text-xs text-gray-500 mt-2">
-                                    Enter your Google Analytics 4 Measurement ID to enable tracking.
-                                </p>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Measurement ID (G-XXXXXXXXXX)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={episodeSettings.googleAnalyticsId || ''}
+                                        onChange={(e) => setEpisodeSettings(prev => ({
+                                            ...prev,
+                                            googleAnalyticsId: e.target.value
+                                        }))}
+                                        placeholder="G-XXXXXXXXXX"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        Enter your Google Analytics 4 Measurement ID to enable tracking.
+                                    </p>
+                                </div>
+                                {/* NEW: GA4 Property ID field for Data API */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        GA4 Property ID <span className="text-gray-400 font-normal">(numeric, for live analytics data)</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={ga4PropertyId}
+                                        onChange={(e) => {
+                                            setGa4PropertyId(e.target.value);
+                                            localStorage.setItem('ga4PropertyId', e.target.value);
+                                        }}
+                                        placeholder="123456789"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        Find this in GA4 Admin &rarr; Property Settings &rarr; Property ID.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Analytics Dashboard - Shows analytics data */}
-                        <AnalyticsDashboard measurementId={episodeSettings.googleAnalyticsId} />
+                        {/* Analytics Dashboard - compact summary in Settings tab */}
+                        <AnalyticsDashboard measurementId={episodeSettings.googleAnalyticsId} propertyId={ga4PropertyId} compact={true} />
 
                         {/* MongoDB Configuration */}
 

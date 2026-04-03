@@ -324,8 +324,49 @@ export interface AnalyticsConfig {
     propertyId?: string;
 }
 
+// Types for real GA4 Data API response
+export interface GA4MetricRow {
+    date: string;
+    sessions: number;
+    activeUsers: number;
+    pageViews: number;
+    eventCount: number;
+}
+
+export interface TopPage {
+    pagePath: string;
+    pageTitle: string;
+    screenPageViews: number;
+}
+
+export interface CountryRow {
+    country: string;
+    activeUsers: number;
+}
+
+export interface GA4AnalyticsData {
+    totalSessions: number;
+    totalUsers: number;
+    totalPageViews: number;
+    totalEventCount: number;
+    avgSessionDuration: string;
+    bounceRate: string;
+    newUsers: number;
+    activeUsersRightNow: number;
+    sevenDayTrend: GA4MetricRow[];
+    dailyTrend: GA4MetricRow[];
+    topPages: TopPage[];
+    topCountries: CountryRow[];
+    propertyId: string;
+    fetchedAt: string;
+}
+
 export const analyticsAPI = {
     getConfig: () => api.get<AnalyticsConfig>('/analytics/config'),
+
+    // NEW: fetch real GA4 metrics — propertyId is numeric (e.g. "123456789")
+    getData: (propertyId: string) =>
+        api.get<GA4AnalyticsData>(`/analytics/data?propertyId=${propertyId}`),
 };
 
 export default api;
