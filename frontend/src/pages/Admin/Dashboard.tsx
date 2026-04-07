@@ -997,14 +997,14 @@ export default function AdminDashboard() {
                         <img
                             src={logoImage}
                             alt="Business Talk Logo"
-                            className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                            className="h-10 w-10 rounded-full object-cover flex-shrink-0"
                             onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=BT&size=200&background=800000&color=fff&bold=true'; }}
                         />
                     </Link>
                     {!sidebarCollapsed && (
                         <div className="overflow-hidden">
                             <p className="text-sm font-bold text-gray-900 truncate">Business Talk</p>
-                            <p className="text-[10px] text-gray-400 truncate">Admin Panel</p>
+                            <p className="text-[10px] text-gray-400 truncate">Enterprise Edition</p>
                         </div>
                     )}
                 </div>
