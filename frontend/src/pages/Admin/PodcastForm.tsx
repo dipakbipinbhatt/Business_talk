@@ -291,12 +291,14 @@ export default function PodcastForm() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center space-x-3">
-                            <img
-                                src={logoImage}
-                                alt="Business Talk Logo"
-                                className="h-10 w-auto"
-                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
-                            />
+                            <Link to="/admin/dashboard" className="flex items-center space-x-3">
+                                <img
+                                    src={logoImage}
+                                    alt="Business Talk Logo"
+                                    className="w-auto h-12 object-contain rounded-full"
+                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
+                                />
+                            </Link>
                             <div>
                                 <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
                                 <p className="text-xs text-gray-500">Welcome, {user?.name}</p>
@@ -305,6 +307,8 @@ export default function PodcastForm() {
                         <div className="flex items-center space-x-4">
                             <Link
                                 to="/"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-sm text-gray-600 hover:text-gray-900"
                             >
                                 View Site

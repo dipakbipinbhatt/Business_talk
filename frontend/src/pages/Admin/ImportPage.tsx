@@ -129,6 +129,8 @@ export default function ImportPage() {
                         <div className="flex items-center space-x-4">
                             <Link
                                 to="/"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-sm text-gray-600 hover:text-gray-900"
                             >
                                 View Site

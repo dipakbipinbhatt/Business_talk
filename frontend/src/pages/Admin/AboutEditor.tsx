@@ -111,7 +111,7 @@ export default function AboutEditor() {
                             <img
                                 src={logoImage}
                                 alt="Business Talk Logo"
-                                className="h-10 w-auto"
+                                className="w-auto h-12 object-contain rounded-full"
                                 onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
                             />
                             <div>
@@ -122,6 +122,8 @@ export default function AboutEditor() {
                         <div className="flex items-center space-x-4">
                             <Link
                                 to="/"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-sm text-gray-600 hover:text-gray-900"
                             >
                                 View Site

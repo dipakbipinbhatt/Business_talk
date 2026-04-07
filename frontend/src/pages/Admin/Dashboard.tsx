@@ -19,6 +19,9 @@ import {
     Search,
     ChevronLeft,
     ChevronRight,
+    ChevronDown,
+    Menu,
+    X,
     Copy,
     FileJson,
     Save,
@@ -33,6 +36,8 @@ import {
     Mail,
     MailOpen,
     Download,
+    User,
+    File,
     // ArrowUpIcon,
 } from 'lucide-react';
 import { podcastAPI, blogAPI, Blog, importAPI, aboutUsAPI, AboutUsContent, renderAPI, systemHealthAPI, settingsAPI, SiteSettings, mongoAPI, contactAPI, ContactMessage, ContactStats, Podcast } from '../../services/api';
@@ -42,7 +47,7 @@ import 'react-quill/dist/quill.snow.css';
 import AnalyticsDashboard from '../../components/AnalyticsDashboard';
 import * as XLSX from 'xlsx';
 
-type ActiveTab = 'podcasts' | 'blogs' | 'import' | 'about' | 'settings' | 'calendar' | 'inbox' | 'analytics';
+type ActiveTab = 'podcasts' | 'blogs' | 'import' | 'about' | 'settings' | 'calendar' | 'inbox' | 'analytics' | 'pages';
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
@@ -58,21 +63,33 @@ export default function AdminDashboard() {
     const getInitialTab = () => {
         const params = new URLSearchParams(location.search);
         const tabParam = params.get('tab');
-        if (tabParam && ['podcasts', 'blogs', 'import', 'about', 'settings', 'calendar', 'inbox', 'analytics'].includes(tabParam)) {
+        if (tabParam && ['podcasts', 'blogs', 'import', 'about', 'settings', 'calendar', 'inbox', 'analytics', 'pages'].includes(tabParam)) {
             return tabParam as ActiveTab;
         }
 
         const path = location.pathname;
+        if (path.includes('/admin/podcasts')) return 'podcasts';
         if (path.includes('/admin/blogs')) return 'blogs';
         if (path.includes('/admin/calendar')) return 'calendar';
         if (path.includes('/admin/import')) return 'import';
         if (path.includes('/admin/about')) return 'about';
         if (path.includes('/admin/settings')) return 'settings';
         if (path.includes('/admin/inbox')) return 'inbox';
-        return 'podcasts';
+        if (path.includes('/admin/pages')) return 'pages';
+        return 'analytics';
     };
 
     const [activeTab, setActiveTab] = useState<ActiveTab>(getInitialTab());
+
+    // Sidebar state
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [settingsGroupOpen, setSettingsGroupOpen] = useState(
+        () => ['settings', 'import'].includes(getInitialTab())
+    );
+    const [pagesGroupOpen, setPagesGroupOpen] = useState(
+        () => ['about'].includes(getInitialTab())
+    );
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
     const extractServiceId = (input: string) => {
         const match = input.match(/(srv-[a-z0-9]+)/i);
@@ -120,6 +137,13 @@ export default function AdminDashboard() {
     const [contactStats, setContactStats] = useState<ContactStats>({ total: 0, unread: 0, read: 0, archived: 0 });
     const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'read' | 'archived'>('all');
 
+    // Calendar State
+    const [calCurrentDate, setCalCurrentDate] = useState(new Date());
+    const [calPodcasts, setCalPodcasts] = useState<Podcast[]>([]);
+    const [calSelectedPodcast, setCalSelectedPodcast] = useState<Podcast | null>(null);
+    const [calLoading, setCalLoading] = useState(false);
+    const [calFetched, setCalFetched] = useState(false);
+
 
     // Set page title
     useEffect(() => {
@@ -144,7 +168,10 @@ export default function AdminDashboard() {
         if (activeTab === 'inbox') {
             fetchMessages();
         }
-    }, [activeTab, messageFilter]);
+        if (activeTab === 'calendar' && !calFetched) {
+            fetchCalendarPodcasts();
+        }
+    }, [activeTab, messageFilter, calFetched]);
 
     const fetchRenderConfig = async () => {
         try {
@@ -296,6 +323,47 @@ export default function AdminDashboard() {
         } finally {
             setMessagesLoading(false);
         }
+    };
+
+    // Fetch all podcasts for calendar (separate from paginated podcast list)
+    const fetchCalendarPodcasts = async () => {
+        setCalLoading(true);
+        try {
+            const response = await podcastAPI.getAll({ limit: 1000 });
+            setCalPodcasts(response.data.podcasts);
+            setCalFetched(true);
+        } catch (error) {
+            console.error('Error fetching calendar podcasts:', error);
+        } finally {
+            setCalLoading(false);
+        }
+    };
+
+    // Calendar helpers
+    const calGetDaysInMonth = (year: number, month: number) =>
+        new Date(year, month + 1, 0).getDate();
+
+    const calGetFirstDay = (year: number, month: number) =>
+        new Date(year, month, 1).getDay();
+
+    const calFormatMonth = (date: Date) =>
+        date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const calPrevMonth = () =>
+        setCalCurrentDate(new Date(calCurrentDate.getFullYear(), calCurrentDate.getMonth() - 1, 1));
+
+    const calNextMonth = () =>
+        setCalCurrentDate(new Date(calCurrentDate.getFullYear(), calCurrentDate.getMonth() + 1, 1));
+
+    const calGoToToday = () => setCalCurrentDate(new Date());
+
+    const calGetPodcastsForDate = (day: number) => {
+        const year = calCurrentDate.getFullYear();
+        const month = calCurrentDate.getMonth();
+        return calPodcasts.filter(p => {
+            const d = new Date(p.scheduledDate);
+            return d.getDate() === day && d.getMonth() === month && d.getFullYear() === year;
+        });
     };
 
     // Mark message as read
@@ -764,130 +832,272 @@ export default function AdminDashboard() {
             }
         };
 
+    // Sidebar nav item helper
+    const navItemClass = (tab: ActiveTab) =>
+        `group flex items-center gap-3 w-full px-3 py-2.5 rounded-lg font-medium transition-all duration-150 relative ${activeTab === tab
+            ? 'bg-maroon-700 text-white'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+        }`;
+
+    const subNavItemClass = (tab: ActiveTab) =>
+        `group flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${activeTab === tab
+            ? 'bg-maroon-700 text-white'
+            : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+        }`;
+
+    const SidebarTooltip = ({ label }: { label: string }) => (
+        sidebarCollapsed ? (
+            <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-md">
+                {label}
+            </span>
+        ) : null
+    );
+
+    const SidebarContent = () => (
+        <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto">
+            {/* Analytics */}
+            <button onClick={() => { setActiveTab('analytics'); setMobileSidebarOpen(false); }} className={navItemClass('analytics')}>
+                <BarChart3 className="w-5 h-5 flex-shrink-0" />
+                {!sidebarCollapsed && <span>Analytics</span>}
+                <SidebarTooltip label="Analytics" />
+            </button>
+
+            {/* Inbox */}
+            <button onClick={() => { setActiveTab('inbox'); setMobileSidebarOpen(false); }} className={`${navItemClass('inbox')} relative`}>
+                <Mail className="w-5 h-5 flex-shrink-0" />
+                {!sidebarCollapsed && <span>Inbox</span>}
+                {contactStats.unread > 0 && (
+                    <span className={`${sidebarCollapsed ? 'absolute top-1 right-1' : 'ml-auto'} min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1`}>
+                        {contactStats.unread}
+                    </span>
+                )}
+                <SidebarTooltip label="Inbox" />
+            </button>
+
+            {/* Podcasts */}
+            <button onClick={() => { setActiveTab('podcasts'); setMobileSidebarOpen(false); }} className={navItemClass('podcasts')}>
+                <Mic className="w-5 h-5 flex-shrink-0" />
+                {!sidebarCollapsed && <span>Podcasts</span>}
+                <SidebarTooltip label="Podcasts" />
+            </button>
+
+            {/* Blogs */}
+            <button onClick={() => { setActiveTab('blogs'); setMobileSidebarOpen(false); }} className={navItemClass('blogs')}>
+                <FileText className="w-5 h-5 flex-shrink-0" />
+                {!sidebarCollapsed && <span>Blogs</span>}
+                <SidebarTooltip label="Blogs" />
+            </button>
+
+            {/* Calendar */}
+            <button onClick={() => { setActiveTab('calendar'); setMobileSidebarOpen(false); }} className={navItemClass('calendar')}>
+                <Calendar className="w-5 h-5 flex-shrink-0" />
+                {!sidebarCollapsed && <span>Calendar</span>}
+                <SidebarTooltip label="Calendar" />
+            </button>
+
+            {/* Divider */}
+            <div className="my-2 border-t border-gray-100" />
+
+            
+           {/* Pages Group Dropdown */}
+             <div>
+                 <button
+                     onClick={() => {
+                         if (sidebarCollapsed) {
+                             // In collapsed mode, clicking the settings icon opens settings directly
+                             setActiveTab('pages');
+                             setMobileSidebarOpen(false);
+                         } else {
+                             setPagesGroupOpen(prev => !prev);
+                         }
+                     }}
+                     className={`group flex items-center gap-3 w-full px-3 py-2.5 rounded-lg font-medium transition-all duration-150 relative ${
+                         ['about'].includes(activeTab)
+                             ? 'bg-maroon-50 text-maroon-700'
+                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                     }`}
+                 >
+                     <File className="w-5 h-5 flex-shrink-0" />
+                     {!sidebarCollapsed && (
+                         <>
+                             <span className="flex-1 text-left">Pages</span>
+                             <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${pagesGroupOpen ? 'rotate-180' : ''}`} />
+                         </>
+                     )}
+                     <SidebarTooltip label="Settings" />
+                 </button>
+
+                 {/* Sub-items — only visible when expanded and group is open */}
+                 {!sidebarCollapsed && pagesGroupOpen && (
+                     <div className="mt-1 ml-3 pl-3 border-l-2 border-gray-100 space-y-0.5">
+                         <button onClick={() => { setActiveTab('about'); setMobileSidebarOpen(false); }} className={subNavItemClass('about')}>
+                             <Info className="w-4 h-4 flex-shrink-0" />
+                             <span>About Us</span>
+                         </button>
+                     </div>
+                 )}
+             </div>
+
+
+            {/* Settings Group Dropdown */}
+            <div>
+                <button
+                    onClick={() => {
+                        if (sidebarCollapsed) {
+                            // In collapsed mode, clicking the settings icon opens settings directly
+                            setActiveTab('settings');
+                            setMobileSidebarOpen(false);
+                        } else {
+                            setSettingsGroupOpen(prev => !prev);
+                        }
+                    }}
+                    className={`group flex items-center gap-3 w-full px-3 py-2.5 rounded-lg font-medium transition-all duration-150 relative ${
+                        ['settings', 'import'].includes(activeTab)
+                            ? 'bg-maroon-50 text-maroon-700'
+                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                >
+                    <Settings className="w-5 h-5 flex-shrink-0" />
+                    {!sidebarCollapsed && (
+                        <>
+                            <span className="flex-1 text-left">Settings</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${settingsGroupOpen ? 'rotate-180' : ''}`} />
+                        </>
+                    )}
+                    <SidebarTooltip label="Settings" />
+                </button>
+
+                {/* Sub-items — only visible when expanded and group is open */}
+                {!sidebarCollapsed && settingsGroupOpen && (
+                    <div className="mt-1 ml-3 pl-3 border-l-2 border-gray-100 space-y-0.5">
+                        <button onClick={() => { setActiveTab('settings'); setMobileSidebarOpen(false); }} className={subNavItemClass('settings')}>
+                            <Settings className="w-4 h-4 flex-shrink-0" />
+                            <span>General</span>
+                        </button>
+                        <button onClick={() => { setActiveTab('import'); setMobileSidebarOpen(false); }} className={subNavItemClass('import')}>
+                            <Upload className="w-4 h-4 flex-shrink-0" />
+                            <span>Import</span>
+                        </button>
+                    </div>
+                )}
+            </div>
+        </nav>
+    );
+
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center space-x-3">
-                            <img
-                                src={logoImage}
-                                alt="Business Talk Logo"
-                                className="h-10 w-auto"
-                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
-                            />
-                            <div>
-                                <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
-                                <p className="text-xs text-gray-500">Welcome, {user?.name}</p>
-                            </div>
+        <div className="min-h-screen bg-gray-50 flex">
+
+            {/* ── DESKTOP SIDEBAR ── */}
+            <aside
+                className={`hidden md:flex flex-col bg-white border-r border-gray-200 fixed top-0 left-0 h-full z-20 transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'w-16' : 'w-60'}`}
+            >
+                {/* Sidebar Header - Logo */}
+                <div className={`flex items-center h-16 border-b border-gray-100 flex-shrink-0 ${sidebarCollapsed ? 'justify-center px-2' : 'px-4 gap-3'}`}>
+                    <Link to="/admin/dashboard" className="hover:text-white transition-colors">
+                        <img
+                            src={logoImage}
+                            alt="Business Talk Logo"
+                            className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=BT&size=200&background=800000&color=fff&bold=true'; }}
+                        />
+                    </Link>
+                    {!sidebarCollapsed && (
+                        <div className="overflow-hidden">
+                            <p className="text-sm font-bold text-gray-900 truncate">Business Talk</p>
+                            <p className="text-[10px] text-gray-400 truncate">Admin Panel</p>
                         </div>
-                        <div className="flex items-center space-x-4">
-                            <Link
-                                to="/"
-                                className="text-sm text-gray-600 hover:text-gray-900"
-                            >
-                                View Site
-                            </Link>
-                            <button
-                                onClick={handleLogout}
-                                className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
-                            >
-                                <LogOut className="w-4 h-4" />
-                                <span>Logout</span>
+                    )}
+                </div>
+
+                {/* Collapse Toggle Button */}
+                <div className="p-2 border-t border-gray-100 flex-shrink-0">
+                    <button
+                        onClick={() => setSidebarCollapsed(prev => !prev)}
+                        className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-maroon-100 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                        title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    >
+                        {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <><ChevronLeft className="w-4 h-4" />
+                        <span className="text-xs">Collapse</span>
+                        </>}
+                    </button>
+                </div>
+
+                {/* Nav Items */}
+                <SidebarContent />
+
+            </aside>
+
+            {/* ── MOBILE SIDEBAR OVERLAY ── */}
+            {mobileSidebarOpen && (
+                <div className="fixed inset-0 z-40 md:hidden">
+                    {/* Backdrop */}
+                    <div className="absolute inset-0 bg-black/40" onClick={() => setMobileSidebarOpen(false)} />
+                    {/* Drawer */}
+                    <aside className="absolute top-0 left-0 h-full w-60 bg-white shadow-xl flex flex-col z-50">
+                        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <Link to="/admin/dashboard" className="hover:text-white transition-colors">
+                                    <img
+                                        src={logoImage}
+                                        alt="Business Talk Logo"
+                                        className="h-8 w-8 rounded-full object-cover"
+                                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=BT&size=200&background=800000&color=fff&bold=true'; }}
+                                    />
+                                </Link>
+                                <p className="text-sm font-bold text-gray-900">Business Talk</p>
+                            </div>
+                            <button onClick={() => setMobileSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
+                        <SidebarContent />
+                    </aside>
+                </div>
+            )}
+
+            {/* ── MAIN CONTENT AREA ── */}
+            <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-60'}`}>
+
+                {/* Header */}
+                <header className="bg-white shadow-sm sticky top-0 z-10">
+                    <div className="px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-16">
+                            <div className="flex items-center space-x-3">
+                                {/* Hamburger — mobile only */}
+                                <button
+                                    className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100"
+                                    onClick={() => setMobileSidebarOpen(true)}
+                                >
+                                    <Menu className="w-5 h-5" />
+                                </button>
+                                <div>
+                                    <h1 className="text-base font-bold text-gray-900">Admin Dashboard</h1>
+                                    <p className="text-xs text-gray-400">Welcome, {user?.name}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                                <Link
+                                    to="/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-gray-500 hover:text-gray-800 hidden sm:block"
+                                >
+                                    View Site
+                                </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex items-center space-x-1.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Logout</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </header>
+                </header>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Tab Navigation - Fixed height to prevent layout shifts */}
-                <div className="flex space-x-4 mb-8" style={{ minHeight: '52px' }}>
-                    <button
-                        onClick={() => setActiveTab('analytics')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'analytics'
-                            ? 'bg-maroon-700 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        <BarChart3 className="w-5 h-5" />
-                        Analytics
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('inbox')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors relative ${activeTab === 'inbox'
-                            ? 'bg-maroon-700 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        <Mail className="w-5 h-5" />
-                        Inbox
-                        {contactStats.unread > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                                {contactStats.unread}
-                            </span>
-                        )}
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('podcasts')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'podcasts'
-                            ? 'bg-maroon-700 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        <Mic className="w-5 h-5" />
-                        Podcasts
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('blogs')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'blogs'
-                            ? 'bg-maroon-700 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        <FileText className="w-5 h-5" />
-                        Blogs
-                    </button>
-                    <Link
-                        to="/admin/calendar"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Calendar className="w-5 h-5" />
-                        Calendar
-                    </Link>
-                    <button
-                        onClick={() => setActiveTab('about')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'about'
-                            ? 'bg-maroon-700 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        <Info className="w-5 h-5" />
-                        About Us
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('settings')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'settings'
-                            ? 'bg-maroon-700 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        <Settings className="w-5 h-5" />
-                        Settings
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('import')}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${activeTab === 'import'
-                            ? 'bg-maroon-700 text-white'
-                            : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        <Upload className="w-5 h-5" />
-                        Import
-                    </button>
-                </div>
-
+                {/* Page Content */}
+                <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
                 {/* Content wrapper with fixed height to prevent jumping */}
                 <div className="relative" style={{ minHeight: '800px' }}>
                 
@@ -2104,8 +2314,190 @@ export default function AdminDashboard() {
                     </div>
                 )}
 
+                {/* Calendar Tab */}
+                {activeTab === 'calendar' && (() => {
+                    const calYear = calCurrentDate.getFullYear();
+                    const calMonth = calCurrentDate.getMonth();
+                    const calDaysInMonth = calGetDaysInMonth(calYear, calMonth);
+                    const calFirstDay = calGetFirstDay(calYear, calMonth);
+                    const calToday = new Date();
+                    const calIsCurrentMonth = calToday.getMonth() === calMonth && calToday.getFullYear() === calYear;
+                    const calDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    const calendarDays: (number | null)[] = [];
+                    for (let i = 0; i < calFirstDay; i++) calendarDays.push(null);
+                    for (let d = 1; d <= calDaysInMonth; d++) calendarDays.push(d);
+
+                    return (
+                        <div className="tab-content-wrapper">
+                            {calLoading ? (
+                                <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+                                    <Calendar className="w-12 h-12 mx-auto text-maroon-600 animate-pulse" />
+                                    <p className="mt-4 text-gray-600">Loading calendar...</p>
+                                </div>
+                            ) : (
+                                <div className="bg-white rounded-xl shadow-sm">
+                                    {/* Card Header */}
+                                    <div className="p-6 border-b">
+                                        <h2 className="text-lg font-bold text-gray-900">Podcast Calendar</h2>
+                                        <p className="text-sm text-gray-500">View all {calPodcasts.length} podcast episodes by date</p>
+                                    </div>
+
+                                    <div className="p-6">
+                                        {/* Month Controls */}
+                                        <div className="flex items-center justify-between mb-6">
+                                            <button onClick={calPrevMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                                <ChevronLeft className="w-6 h-6" />
+                                            </button>
+                                            <div className="flex items-center gap-4">
+                                                <h2 className="text-xl font-semibold text-gray-900">{calFormatMonth(calCurrentDate)}</h2>
+                                                <button
+                                                    onClick={calGoToToday}
+                                                    className="px-3 py-1 text-sm bg-maroon-100 text-maroon-700 rounded-full hover:bg-maroon-200 transition-colors"
+                                                >
+                                                    Today
+                                                </button>
+                                            </div>
+                                            <button onClick={calNextMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                                <ChevronRight className="w-6 h-6" />
+                                            </button>
+                                        </div>
+
+                                        {/* Calendar Grid */}
+                                        <div className="border rounded-lg overflow-hidden">
+                                            {/* Day Name Row */}
+                                            <div className="grid grid-cols-7 bg-gray-50 border-b">
+                                                {calDayNames.map(day => (
+                                                    <div key={day} className="p-3 text-center text-sm font-semibold text-gray-600">{day}</div>
+                                                ))}
+                                            </div>
+
+                                            {/* Day Cells */}
+                                            <div className="grid grid-cols-7">
+                                                {calendarDays.map((day, index) => {
+                                                    const dayPodcasts = day ? calGetPodcastsForDate(day) : [];
+                                                    const isToday = calIsCurrentMonth && day === calToday.getDate();
+                                                    return (
+                                                        <div
+                                                            key={index}
+                                                            className={`p-2 border-b border-r ${day ? 'bg-white' : 'bg-gray-50'} ${isToday ? 'bg-maroon-50' : ''}`}
+                                                            style={{ minHeight: '120px', height: '120px' }}
+                                                        >
+                                                            {day && (
+                                                                <>
+                                                                    <span className={`inline-flex items-center justify-center w-7 h-7 text-sm ${isToday ? 'bg-maroon-600 text-white rounded-full font-bold' : 'text-gray-700'}`}>
+                                                                        {day}
+                                                                    </span>
+                                                                    <div className="mt-1 space-y-1">
+                                                                        {dayPodcasts.slice(0, 3).map(podcast => {
+                                                                            const isPast = new Date(podcast.scheduledDate) < calToday;
+                                                                            return (
+                                                                                <button
+                                                                                    key={podcast._id}
+                                                                                    onClick={() => setCalSelectedPodcast(podcast)}
+                                                                                    className={`w-full text-left px-2 py-1 rounded text-xs truncate ${isPast ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-maroon-100 text-maroon-700 hover:bg-maroon-200'}`}
+                                                                                >
+                                                                                    EP {podcast.episodeNumber}
+                                                                                </button>
+                                                                            );
+                                                                        })}
+                                                                        {dayPodcasts.length > 3 && (
+                                                                            <span className="text-xs text-gray-500 px-2">+{dayPodcasts.length - 3} more</span>
+                                                                        )}
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        {/* Legend */}
+                                        <div className="mt-6 flex gap-6 justify-center text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-4 h-4 bg-maroon-100 rounded"></span>
+                                                <span className="text-gray-600">Upcoming</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-4 h-4 bg-gray-100 rounded"></span>
+                                                <span className="text-gray-600">Past</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Podcast Detail Modal */}
+                            {calSelectedPodcast && (
+                                <div
+                                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                                    onClick={() => setCalSelectedPodcast(null)}
+                                >
+                                    <div
+                                        className="bg-white rounded-xl shadow-xl max-w-lg w-full flex flex-col"
+                                        style={{ maxHeight: '90vh' }}
+                                        onClick={e => e.stopPropagation()}
+                                    >
+                                        {/* Modal Header */}
+                                        <div className="flex justify-between items-start p-6 pb-4 border-b flex-shrink-0">
+                                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${new Date(calSelectedPodcast.scheduledDate) < calToday ? 'bg-gray-100 text-gray-700' : 'bg-maroon-100 text-maroon-700'}`}>
+                                                Episode {calSelectedPodcast.episodeNumber} — {new Date(calSelectedPodcast.scheduledDate) < calToday ? 'Past' : 'Upcoming'}
+                                            </span>
+                                            <button onClick={() => setCalSelectedPodcast(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+                                        </div>
+
+                                        {/* Scrollable Content */}
+                                        <div className="overflow-y-auto flex-1 px-6 py-4">
+                                            <h3 className="text-xl font-bold text-gray-900 mb-4">{calSelectedPodcast.title}</h3>
+                                            <div className="space-y-3 text-gray-600 mb-4">
+                                                <div className="flex items-center gap-2">
+                                                    <User className="w-4 h-4 flex-shrink-0" />
+                                                    <span>{calSelectedPodcast.guestName} — {calSelectedPodcast.guestTitle}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="w-4 h-4 flex-shrink-0" />
+                                                    <span>{new Date(calSelectedPodcast.scheduledDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="w-4 h-4 flex-shrink-0" />
+                                                    <span>{calSelectedPodcast.scheduledTime}</span>
+                                                </div>
+                                            </div>
+                                            <p className="text-gray-700 text-sm leading-relaxed">{calSelectedPodcast.description}</p>
+                                        </div>
+
+                                        {/* Modal Footer */}
+                                        <div className="p-6 pt-4 border-t flex-shrink-0">
+                                            <div className="flex gap-3">
+                                                <Link
+                                                    to={`/admin/podcast/edit/${calSelectedPodcast._id}`}
+                                                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-maroon-600 text-white font-semibold rounded-lg hover:bg-maroon-700 transition-colors"
+                                                >
+                                                    Edit Episode
+                                                </Link>
+                                                {calSelectedPodcast.youtubeUrl && new Date(calSelectedPodcast.scheduledDate) < calToday && (
+                                                    <a
+                                                        href={calSelectedPodcast.youtubeUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
+                                                    >
+                                                        Watch
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
+
+
                 </div>
-            </main >
-        </div >
+                </main>
+            </div>
+        </div>
     );
 }

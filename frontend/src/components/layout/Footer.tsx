@@ -10,14 +10,16 @@ export default function Footer() {
                     {/* Brand */}
                     <div className="col-span-1">
                         <div className="flex items-center space-x-3 mb-4">
-                            <img
-                                src={logoImage}
-                                alt="Business Talk Logo"
-                                className="w-12 h-12 object-contain rounded-full"
-                            />
-                            <span className="text-xl font-bold text-white">
-                                Business Talk
-                            </span>
+                            <Link to="/" className="hover:text-white transition-colors">
+                                <img
+                                    src={logoImage}
+                                    alt="Business Talk Logo"
+                                    className="w-12 h-12 object-contain rounded-full"
+                                />
+                                <span className="text-xl font-bold text-white">
+                                    Business Talk
+                                </span>
+                            </Link>
                         </div>
                         <p className="text-gray-400 max-w-md text-justify leading-relaxed">
                             Your premier podcast for cutting-edge trends, groundbreaking research,

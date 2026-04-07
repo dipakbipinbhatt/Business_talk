@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     ArrowLeft,
@@ -11,17 +11,19 @@ import {
     Eye,
     EyeOff,
     Plus,
-    Upload
+    Upload,
+    LogOut
 } from 'lucide-react';
 import { blogAPI, BlogInput, categoryAPI, Category } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import logoImage from '../../assets/logo.jpg';
 
 export default function BlogForm() {
     const navigate = useNavigate();
     const { id } = useParams();
-    const { isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, logout } = useAuthStore();
     const isEditing = Boolean(id);
 
     const [formData, setFormData] = useState<BlogInput>({
@@ -156,6 +158,11 @@ export default function BlogForm() {
             tags: prev.tags?.filter((tag) => tag !== tagToRemove) || [],
         }));
     };
+    
+    const handleLogout = () => {
+        logout();
+        navigate('/admin/login');
+    };
 
     if (isLoading) {
         return (
@@ -166,10 +173,50 @@ export default function BlogForm() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4">
-            <div className="max-w-4xl mx-auto">
+        <div className="min-h-screen bg-gray-50">
+            
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <header className="bg-white shadow-sm">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center justify-between h-16">
+                            <div className="flex items-center space-x-3">
+                                <Link to="/admin/dashboard" className="flex items-center space-x-3">
+                                    <img
+                                        src={logoImage}
+                                        alt="Business Talk Logo"
+                                        className="w-auto h-12 object-contain rounded-full"
+                                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
+                                    />
+                                </Link>
+                                <div>
+                                    <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
+                                    <p className="text-xs text-gray-500">Welcome, {user?.name}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <Link
+                                    to="/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-gray-600 hover:text-gray-900"
+                                >
+                                    View Site
+                                </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+            <div className="max-w-4xl mx-auto">
+
+                <div className="flex items-center justify-between mt-5 mb-5">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => navigate('/admin/dashboard')}
@@ -188,7 +235,7 @@ export default function BlogForm() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     onSubmit={handleSubmit}
-                    className="bg-white rounded-xl shadow-sm p-6 md:p-8 space-y-6"
+                    className="bg-white rounded-xl shadow-sm p-6 mb-5 md:p-8 space-y-6"
                 >
                     {error && (
                         <div className="p-4 bg-red-50 text-red-600 rounded-lg">

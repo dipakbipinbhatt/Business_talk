@@ -220,7 +220,8 @@ export default function Podcasts() {
                                                 ? `Found ${podcasts.length} matching episodes`
                                                 : totalCount !== null
                                                     ? `${totalCount} episodes in total`
-                                                    : 'Watch our conversations'}
+                                                    : 'Watch our conversations'
+                                            }
                                         </p>
                                     </div>
                                 </div>
