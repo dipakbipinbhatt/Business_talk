@@ -6,7 +6,6 @@ import {
     Plus,
     Edit,
     Trash2,
-    LogOut,
     BarChart3,
     Calendar,
     Clock,
@@ -20,7 +19,6 @@ import {
     ChevronLeft,
     ChevronRight,
     ChevronDown,
-    Menu,
     X,
     Copy,
     FileJson,
@@ -45,6 +43,7 @@ import { useAuthStore, usePodcastStore } from '../../store/useStore';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import AnalyticsDashboard from '../../components/AnalyticsDashboard';
+import AdminHeader from '../../components/layout/AdminHeader';
 import * as XLSX from 'xlsx';
 
 type ActiveTab = 'podcasts' | 'blogs' | 'import' | 'about' | 'settings' | 'calendar' | 'inbox' | 'analytics' | 'pages';
@@ -59,23 +58,23 @@ export default function AdminDashboard() {
     const [isExporting, setIsExporting] = useState(false);
     const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
 
-    // Determine active tab from URL query param or path
-    const getInitialTab = () => {
+    // Determine active tab from URL pathname
+    const getInitialTab = (): ActiveTab => {
+        const path = location.pathname;
+        if (path.includes('/admin/dashboard/analytics'))        return 'analytics';
+        if (path.includes('/admin/dashboard/podcasts'))         return 'podcasts';
+        if (path.includes('/admin/dashboard/blogs'))            return 'blogs';
+        if (path.includes('/admin/dashboard/calendar'))         return 'calendar';
+        if (path.includes('/admin/dashboard/inbox'))            return 'inbox';
+        if (path.includes('/admin/dashboard/pages/about'))      return 'about';
+        if (path.includes('/admin/dashboard/settings/general')) return 'settings';
+        if (path.includes('/admin/dashboard/settings/import'))  return 'import';
+        // Legacy ?tab= query param support (backward compat)
         const params = new URLSearchParams(location.search);
         const tabParam = params.get('tab');
         if (tabParam && ['podcasts', 'blogs', 'import', 'about', 'settings', 'calendar', 'inbox', 'analytics', 'pages'].includes(tabParam)) {
             return tabParam as ActiveTab;
         }
-
-        const path = location.pathname;
-        if (path.includes('/admin/podcasts')) return 'podcasts';
-        if (path.includes('/admin/blogs')) return 'blogs';
-        if (path.includes('/admin/calendar')) return 'calendar';
-        if (path.includes('/admin/import')) return 'import';
-        if (path.includes('/admin/about')) return 'about';
-        if (path.includes('/admin/settings')) return 'settings';
-        if (path.includes('/admin/inbox')) return 'inbox';
-        if (path.includes('/admin/pages')) return 'pages';
         return 'analytics';
     };
 
@@ -145,17 +144,26 @@ export default function AdminDashboard() {
     const [calFetched, setCalFetched] = useState(false);
 
 
-    // Set page title
+    // Set page title dynamically per active tab
+    const tabTitles: Record<ActiveTab, string> = {
+        analytics: 'Analytics | Business Talk Admin',
+        podcasts:  'Podcasts | Business Talk Admin',
+        blogs:     'Blogs | Business Talk Admin',
+        calendar:  'Calendar | Business Talk Admin',
+        inbox:     'Inbox | Business Talk Admin',
+        about:     'About Us — Pages | Business Talk Admin',
+        settings:  'Settings — General | Business Talk Admin',
+        import:    'Settings — Import | Business Talk Admin',
+        pages:     'Pages | Business Talk Admin',
+    };
     useEffect(() => {
-        document.title = "Business Talk | Admin Dashboard";
-    }, []);
+        document.title = tabTitles[activeTab];
+    }, [activeTab]);
 
-    // Handle Settings Tab Load
+    // Sync active tab when URL changes (browser back/forward buttons)
     useEffect(() => {
-        if (location.pathname.includes('/admin/settings')) {
-            setActiveTab('settings');
-        }
-    }, [location]);
+        setActiveTab(getInitialTab());
+    }, [location.pathname]);
 
     // Fetch Render Config and Deployments on load
     useEffect(() => {
@@ -832,6 +840,24 @@ export default function AdminDashboard() {
             }
         };
 
+    // Navigate to a tab — updates both URL and local state
+    const tabPaths: Record<ActiveTab, string> = {
+        analytics: '/admin/dashboard/analytics',
+        podcasts:  '/admin/dashboard/podcasts',
+        blogs:     '/admin/dashboard/blogs',
+        calendar:  '/admin/dashboard/calendar',
+        inbox:     '/admin/dashboard/inbox',
+        about:     '/admin/dashboard/pages/about',
+        settings:  '/admin/dashboard/settings/general',
+        import:    '/admin/dashboard/settings/import',
+        pages:     '/admin/dashboard/pages/about',
+    };
+    const goToTab = (tab: ActiveTab) => {
+        setActiveTab(tab);
+        setMobileSidebarOpen(false);
+        navigate(tabPaths[tab]);
+    };
+
     // Sidebar nav item helper
     const navItemClass = (tab: ActiveTab) =>
         `group flex items-center gap-3 w-full px-3 py-2.5 rounded-lg font-medium transition-all duration-150 relative ${activeTab === tab
@@ -856,14 +882,14 @@ export default function AdminDashboard() {
     const SidebarContent = () => (
         <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto">
             {/* Analytics */}
-            <button onClick={() => { setActiveTab('analytics'); setMobileSidebarOpen(false); }} className={navItemClass('analytics')}>
+            <button onClick={() => goToTab('analytics')} className={navItemClass('analytics')}>
                 <BarChart3 className="w-5 h-5 flex-shrink-0" />
                 {!sidebarCollapsed && <span>Analytics</span>}
                 <SidebarTooltip label="Analytics" />
             </button>
 
             {/* Inbox */}
-            <button onClick={() => { setActiveTab('inbox'); setMobileSidebarOpen(false); }} className={`${navItemClass('inbox')} relative`}>
+            <button onClick={() => goToTab('inbox')} className={`${navItemClass('inbox')} relative`}>
                 <Mail className="w-5 h-5 flex-shrink-0" />
                 {!sidebarCollapsed && <span>Inbox</span>}
                 {contactStats.unread > 0 && (
@@ -875,21 +901,21 @@ export default function AdminDashboard() {
             </button>
 
             {/* Podcasts */}
-            <button onClick={() => { setActiveTab('podcasts'); setMobileSidebarOpen(false); }} className={navItemClass('podcasts')}>
+            <button onClick={() => goToTab('podcasts')} className={navItemClass('podcasts')}>
                 <Mic className="w-5 h-5 flex-shrink-0" />
                 {!sidebarCollapsed && <span>Podcasts</span>}
                 <SidebarTooltip label="Podcasts" />
             </button>
 
             {/* Blogs */}
-            <button onClick={() => { setActiveTab('blogs'); setMobileSidebarOpen(false); }} className={navItemClass('blogs')}>
+            <button onClick={() => goToTab('blogs')} className={navItemClass('blogs')}>
                 <FileText className="w-5 h-5 flex-shrink-0" />
                 {!sidebarCollapsed && <span>Blogs</span>}
                 <SidebarTooltip label="Blogs" />
             </button>
 
             {/* Calendar */}
-            <button onClick={() => { setActiveTab('calendar'); setMobileSidebarOpen(false); }} className={navItemClass('calendar')}>
+            <button onClick={() => goToTab('calendar')} className={navItemClass('calendar')}>
                 <Calendar className="w-5 h-5 flex-shrink-0" />
                 {!sidebarCollapsed && <span>Calendar</span>}
                 <SidebarTooltip label="Calendar" />
@@ -904,9 +930,8 @@ export default function AdminDashboard() {
                  <button
                      onClick={() => {
                          if (sidebarCollapsed) {
-                             // In collapsed mode, clicking the settings icon opens settings directly
-                             setActiveTab('pages');
-                             setMobileSidebarOpen(false);
+                             // In collapsed mode, clicking the pages icon opens About directly
+                             goToTab('about');
                          } else {
                              setPagesGroupOpen(prev => !prev);
                          }
@@ -930,7 +955,7 @@ export default function AdminDashboard() {
                  {/* Sub-items — only visible when expanded and group is open */}
                  {!sidebarCollapsed && pagesGroupOpen && (
                      <div className="mt-1 ml-3 pl-3 border-l-2 border-gray-100 space-y-0.5">
-                         <button onClick={() => { setActiveTab('about'); setMobileSidebarOpen(false); }} className={subNavItemClass('about')}>
+                         <button onClick={() => goToTab('about')} className={subNavItemClass('about')}>
                              <Info className="w-4 h-4 flex-shrink-0" />
                              <span>About Us</span>
                          </button>
@@ -945,8 +970,7 @@ export default function AdminDashboard() {
                     onClick={() => {
                         if (sidebarCollapsed) {
                             // In collapsed mode, clicking the settings icon opens settings directly
-                            setActiveTab('settings');
-                            setMobileSidebarOpen(false);
+                            goToTab('settings');
                         } else {
                             setSettingsGroupOpen(prev => !prev);
                         }
@@ -970,11 +994,11 @@ export default function AdminDashboard() {
                 {/* Sub-items — only visible when expanded and group is open */}
                 {!sidebarCollapsed && settingsGroupOpen && (
                     <div className="mt-1 ml-3 pl-3 border-l-2 border-gray-100 space-y-0.5">
-                        <button onClick={() => { setActiveTab('settings'); setMobileSidebarOpen(false); }} className={subNavItemClass('settings')}>
+                        <button onClick={() => goToTab('settings')} className={subNavItemClass('settings')}>
                             <Settings className="w-4 h-4 flex-shrink-0" />
                             <span>General</span>
                         </button>
-                        <button onClick={() => { setActiveTab('import'); setMobileSidebarOpen(false); }} className={subNavItemClass('import')}>
+                        <button onClick={() => goToTab('import')} className={subNavItemClass('import')}>
                             <Upload className="w-4 h-4 flex-shrink-0" />
                             <span>Import</span>
                         </button>
@@ -1058,43 +1082,12 @@ export default function AdminDashboard() {
             {/* ── MAIN CONTENT AREA ── */}
             <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-60'}`}>
 
-                {/* Header */}
-                <header className="bg-white shadow-sm sticky top-0 z-10">
-                    <div className="px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-16">
-                            <div className="flex items-center space-x-3">
-                                {/* Hamburger — mobile only */}
-                                <button
-                                    className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100"
-                                    onClick={() => setMobileSidebarOpen(true)}
-                                >
-                                    <Menu className="w-5 h-5" />
-                                </button>
-                                <div>
-                                    <h1 className="text-base font-bold text-gray-900">Admin Dashboard</h1>
-                                    <p className="text-xs text-gray-400">Welcome, {user?.name}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                                <Link
-                                    to="/"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-gray-500 hover:text-gray-800 hidden sm:block"
-                                >
-                                    View Site
-                                </Link>
-                                <button
-                                    onClick={handleLogout}
-                                    className="flex items-center space-x-1.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Logout</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </header>
+                {/* Header — shared AdminHeader component */}
+                <AdminHeader
+                    userName={user?.name}
+                    onLogout={handleLogout}
+                    onMenuClick={() => setMobileSidebarOpen(true)}
+                />
 
                 {/* Page Content */}
                 <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
@@ -1776,7 +1769,7 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* MongoDB Atlas Cluster Status */}
-                        <div
+                        {/* <div
                             className="bg-white rounded-xl shadow-sm p-6"
                         >
                             <div className="flex items-center justify-between mb-6">
@@ -1850,7 +1843,7 @@ export default function AdminDashboard() {
                                     )}
                                 </div>
                             )}
-                        </div>
+                        </div> */}
 
 
                         {/* Episode Loading Configuration */}

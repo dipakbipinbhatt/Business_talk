@@ -10,6 +10,10 @@ export default function Calendar() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        document.title = 'Podcast Calendar | Business Talk';
+    }, []);
+
+    useEffect(() => {
         fetchPodcasts();
     }, []);
 

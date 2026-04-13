@@ -1,23 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import logoImage from '../../assets/logo.jpg';
+// logoImage removed — now rendered inside AdminHeader component
 import {
     ChevronLeft,
     ChevronRight,
     Calendar as CalendarIcon,
     Clock,
     User,
-    LogOut,
-    Mic,
-    FileText,
-    Upload,
-    Settings,
-    Mail,
-    Info,
 } from 'lucide-react';
 import { podcastAPI, Podcast } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
+import AdminHeader from '../../components/layout/AdminHeader';
 
 export default function AdminCalendar() {
     const navigate = useNavigate();
@@ -121,103 +115,17 @@ export default function AdminCalendar() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center space-x-3">
-                            <Link to="/admin/dashboard" className="hover:text-white transition-colors">
-                                <img
-                                    src={logoImage}
-                                    alt="Business Talk Logo"
-                                    className="w-12 h-12 object-contain rounded-full"
-                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
-                                />
-                            </Link>
-                            <div>
-                                <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
-                                <p className="text-xs text-gray-500">Welcome, {user?.name}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <Link
-                                to="/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-gray-600 hover:text-gray-900"
-                            >
-                                View Site
-                            </Link>
-                            <button
-                                onClick={handleLogout}
-                                className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
-                            >
-                                <LogOut className="w-4 h-4" />
-                                <span>Logout</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* Header — shared AdminHeader component */}
+            <AdminHeader
+                userName={user?.name}
+                onLogout={handleLogout}
+            />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Tab Navigation - Fixed height to prevent layout shifts */}
-                <div className="flex space-x-4 mb-8" style={{ minHeight: '52px' }}>
-                    <Link
-                        to="/admin/dashboard?tab=analytics"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Mail className="w-5 h-5" />
-                        Analytics
-                    </Link>
-                    <Link
-                        to="/admin/dashboard?tab=inbox"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Mail className="w-5 h-5" />
-                        Inbox
-                    </Link>
-                    <Link
-                        to="/admin/dashboard?tab=podcasts"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Mic className="w-5 h-5" />
-                        Podcasts
-                    </Link>
-                    <Link
-                        to="/admin/dashboard?tab=blogs"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <FileText className="w-5 h-5" />
-                        Blogs
-                    </Link>
-                    <div className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-maroon-700 text-white">
-                        <CalendarIcon className="w-5 h-5" />
-                        Calendar
-                    </div>
-                    <Link
-                        to="/admin/dashboard?tab=about"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                        title="Manage About Us Content"
-                    >
-                        <Info className="w-5 h-5" />
-                        About Us
-                    </Link>
-                    <Link
-                        to="/admin/dashboard?tab=settings"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Settings className="w-5 h-5" />
-                        Settings
-                    </Link>
-                    <Link
-                        to="/admin/dashboard?tab=import"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Upload className="w-5 h-5" />
-                        Import
-                    </Link>
-                </div>
+                {/* REMOVED: Old horizontal tab navigation — replaced by the left sidebar in Dashboard.tsx.
+                    AdminCalendar is now accessible as a tab inside the main Dashboard sidebar.
+                <div className="flex space-x-4 mb-8"> ... </div>
+                */}
                 
                 {/* Content wrapper with fixed height to prevent jumping */}
                 <div className="relative" style={{ minHeight: '800px' }}>
@@ -436,4 +344,3 @@ export default function AdminCalendar() {
         </div>
     );
 }
-

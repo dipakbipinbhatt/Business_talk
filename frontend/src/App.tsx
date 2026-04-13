@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -32,7 +32,7 @@ const Loading = () => (
 
 function App() {
     return (
-        <HashRouter>
+        <BrowserRouter>
             <ScrollToTop />
             <GoogleAnalytics />
             <Suspense fallback={<Loading />}>
@@ -49,7 +49,17 @@ function App() {
                     <Route path="/admin">
                         <Route index element={<AdminLogin />} />
                         <Route path="login" element={<AdminLogin />} />
+                        {/* Dashboard — each tab has its own deep-link URL */}
                         <Route path="dashboard" element={<AdminDashboard />} />
+                        <Route path="dashboard/analytics" element={<AdminDashboard />} />
+                        <Route path="dashboard/podcasts" element={<AdminDashboard />} />
+                        <Route path="dashboard/blogs" element={<AdminDashboard />} />
+                        <Route path="dashboard/calendar" element={<AdminDashboard />} />
+                        <Route path="dashboard/inbox" element={<AdminDashboard />} />
+                        <Route path="dashboard/pages/about" element={<AdminDashboard />} />
+                        <Route path="dashboard/settings/general" element={<AdminDashboard />} />
+                        <Route path="dashboard/settings/import" element={<AdminDashboard />} />
+                        {/* Form routes — unchanged */}
                         <Route path="calendar" element={<AdminCalendar />} />
                         <Route path="podcast/new" element={<PodcastForm />} />
                         <Route path="podcast/edit/:id" element={<PodcastForm />} />
@@ -61,7 +71,7 @@ function App() {
                     <Route path="*" element={<NotFound />} />
                 </Routes>
             </Suspense>
-        </HashRouter>
+        </BrowserRouter>
     );
 }
 

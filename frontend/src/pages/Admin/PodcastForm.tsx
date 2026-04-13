@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Loader2, Upload, X, Plus, Trash2, LogOut } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Upload, X, Plus, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { podcastAPI, PodcastInput, podcastTypeAPI } from '../../services/api';
 import { useAuthStore, usePodcastStore } from '../../store/useStore';
-import logoImage from '../../assets/logo.jpg';
+import AdminHeader from '../../components/layout/AdminHeader';
 
 interface Guest {
     name: string;
@@ -185,7 +185,7 @@ export default function PodcastForm() {
                 } catch (error) {
                     console.error('Error fetching podcast:', error);
                     alert('Failed to load podcast');
-                    navigate('/admin/dashboard');
+                    navigate('/admin/dashboard/podcasts');
                 } finally {
                     setIsFetching(false);
                 }
@@ -247,7 +247,7 @@ export default function PodcastForm() {
                 addPodcast(response.data.podcast);
             }
 
-            navigate('/admin/dashboard');
+            navigate('/admin/dashboard/podcasts');
         } catch (error: any) {
             console.error('Error saving podcast:', error);
             alert(error.response?.data?.message || 'Failed to save podcast');
@@ -286,75 +286,23 @@ export default function PodcastForm() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center space-x-3">
-                            <Link to="/admin/dashboard" className="flex items-center space-x-3">
-                                <img
-                                    src={logoImage}
-                                    alt="Business Talk Logo"
-                                    className="w-auto h-12 object-contain rounded-full"
-                                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
-                                />
-                            </Link>
-                            <div>
-                                <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
-                                <p className="text-xs text-gray-500">Welcome, {user?.name}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <Link
-                                to="/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-gray-600 hover:text-gray-900"
-                            >
-                                View Site
-                            </Link>
-                            <button
-                                onClick={handleLogout}
-                                className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
-                            >
-                                <LogOut className="w-4 h-4" />
-                                <span>Logout</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
-            
-            {/* <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"> */}
-                {/* <div className="flex items-center h-16"> */}
-                        {/* <Link
-                            to="/admin/dashboard"
-                            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                            <span>Back to Dashboard</span>
-                        </Link>*/}
-
-                    {/* <button
-                        onClick={() => navigate("/admin/dashboard")}
-                        className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Dashboard</span>
-                    </button> */}
-                {/* </div> */}
-            {/* </div> */}
-            
+            {/* Header — shared AdminHeader component */}
+            <AdminHeader
+                userName={user?.name}
+                onLogout={handleLogout}
+                sticky={false}
+            />            
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"> */}
+                <div className="flex items-center justify-between mb-5">
                     <div className="flex items-center h-16">
                         <button
-                            onClick={() => navigate("/admin/dashboard")}
+                            onClick={() => navigate("/admin/dashboard/podcasts")}
                             className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 border border-red-600 hover:bg-red-50 rounded-lg"
                         >
                             <ArrowLeft className="w-5 h-5" />
-                            <span>Back to Dashboard</span>
+                            <span>Back to Podcasts</span>
                         </button>
                     </div>
                 </div>
@@ -826,7 +774,7 @@ export default function PodcastForm() {
                         {/* Submit */}
                         <div className="flex items-center justify-end space-x-4 pt-6 border-t">
                             <Link
-                                to="/admin/dashboard"
+                                to="/admin/dashboard/podcasts"
                                 className="px-6 py-3 text-gray-600 hover:text-gray-900"
                             >
                                 Cancel

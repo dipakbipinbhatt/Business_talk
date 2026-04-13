@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     ArrowLeft,
@@ -12,13 +12,13 @@ import {
     EyeOff,
     Plus,
     Upload,
-    LogOut
 } from 'lucide-react';
 import { blogAPI, BlogInput, categoryAPI, Category } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
+import AdminHeader from '../../components/layout/AdminHeader';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import logoImage from '../../assets/logo.jpg';
+// logoImage removed — now rendered inside AdminHeader component
 
 export default function BlogForm() {
     const navigate = useNavigate();
@@ -123,7 +123,7 @@ export default function BlogForm() {
             } else {
                 await blogAPI.create(formData);
             }
-            navigate('/admin/dashboard');
+            navigate('/admin/dashboard/blogs');
         } catch (err: any) {
             console.error('Error saving blog:', err);
             setError(err.response?.data?.message || 'Failed to save blog');
@@ -175,58 +175,24 @@ export default function BlogForm() {
     return (
         <div className="min-h-screen bg-gray-50">
             
-                {/* Header */}
-                <header className="bg-white shadow-sm">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-16">
-                            <div className="flex items-center space-x-3">
-                                <Link to="/admin/dashboard" className="flex items-center space-x-3">
-                                    <img
-                                        src={logoImage}
-                                        alt="Business Talk Logo"
-                                        className="w-auto h-12 object-contain rounded-full"
-                                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
-                                    />
-                                </Link>
-                                <div>
-                                    <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
-                                    <p className="text-xs text-gray-500">Welcome, {user?.name}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center space-x-4">
-                                <Link
-                                    to="/"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-gray-600 hover:text-gray-900"
-                                >
-                                    View Site
-                                </Link>
-                                <button
-                                    onClick={handleLogout}
-                                    className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                    <span>Logout</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </header>
+                {/* Header — shared AdminHeader component */}
+                <AdminHeader
+                    userName={user?.name}
+                    onLogout={handleLogout}
+                    sticky={false}
+                />
 
             <div className="max-w-4xl mx-auto">
 
                 <div className="flex items-center justify-between mt-5 mb-5">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center h-16">
                         <button
-                            onClick={() => navigate('/admin/dashboard')}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            onClick={() => navigate("/admin/dashboard/blogs")}
+                            className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 border border-red-600 hover:bg-red-50 rounded-lg"
                         >
                             <ArrowLeft className="w-5 h-5" />
+                            <span>Back to Blogs</span>
                         </button>
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            {isEditing ? 'Edit Blog Post' : 'Create New Blog Post'}
-                        </h1>
                     </div>
                 </div>
 
@@ -245,6 +211,9 @@ export default function BlogForm() {
 
                     {/* Title */}
                     <div>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-5">
+                            {isEditing ? 'Edit Blog Post' : 'Create New Blog Post'}
+                        </h1>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             <FileText className="w-4 h-4 inline mr-2" />
                             Title *
@@ -532,7 +501,7 @@ export default function BlogForm() {
                     <div className="flex gap-4 pt-4">
                         <button
                             type="button"
-                            onClick={() => navigate('/admin/dashboard')}
+                            onClick={() => navigate('/admin/dashboard/blogs')}
                             className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                         >
                             Cancel

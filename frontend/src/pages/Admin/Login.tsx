@@ -143,13 +143,13 @@ export default function AdminLogin() {
                     </div>
 
                     {/* Demo Credentials */}
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    {/* <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-500 text-center">
                             <strong>Demo Credentials:</strong><br />
                             Email: admin@businesstalk.com<br />
                             Password: Admin@123
                         </p>
-                    </div>
+                    </div> */}
                 </div>
             </motion.div>
         </div>

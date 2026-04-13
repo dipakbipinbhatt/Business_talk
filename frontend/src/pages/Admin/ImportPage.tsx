@@ -8,15 +8,10 @@ import {
     XCircle,
     FileJson,
     Copy,
-    Mic,
-    FileText,
-    Calendar,
-    Info,
-    LogOut,
 } from 'lucide-react';
 import { importAPI } from '../../services/api';
 import { useAuthStore } from '../../store/useStore';
-import logoImage from '../../assets/logo.jpg';
+import AdminHeader from '../../components/layout/AdminHeader';
 
 const SAMPLE_JSON = `[
   {
@@ -110,81 +105,17 @@ export default function ImportPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center space-x-3">
-                            <img
-                                src={logoImage}
-                                alt="Business Talk Logo"
-                                className="h-10 w-auto"
-                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://ui-avatars.com/api/?name=Business+Talk&size=200&background=8B1538&color=fff&bold=true'; }}
-                            />
-                            <div>
-                                <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
-                                <p className="text-xs text-gray-500">Welcome, {user?.name}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <Link
-                                to="/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-gray-600 hover:text-gray-900"
-                            >
-                                View Site
-                            </Link>
-                            <button
-                                onClick={handleLogout}
-                                className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg"
-                            >
-                                <LogOut className="w-4 h-4" />
-                                <span>Logout</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* Header — shared AdminHeader component */}
+            <AdminHeader
+                userName={user?.name}
+                onLogout={handleLogout}
+            />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Tab Navigation */}
-                <div className="flex space-x-4 mb-8">
-                    <Link
-                        to="/admin/dashboard"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Mic className="w-5 h-5" />
-                        Podcasts
-                    </Link>
-                    <Link
-                        to="/admin/dashboard"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <FileText className="w-5 h-5" />
-                        Blogs
-                    </Link>
-                    <Link
-                        to="/admin/calendar"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Calendar className="w-5 h-5" />
-                        Calendar
-                    </Link>
-                    <button
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-maroon-700 text-white"
-                    >
-                        <Upload className="w-5 h-5" />
-                        Import
-                    </button>
-                    <Link
-                        to="/admin/about"
-                        className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors bg-white text-gray-600 hover:bg-gray-50"
-                    >
-                        <Info className="w-5 h-5" />
-                        About Us
-                    </Link>
-                </div>
+                {/* REMOVED: Old horizontal tab navigation — replaced by the left sidebar in Dashboard.tsx.
+                    Navigation back to other sections is now done via the sidebar.
+                <div className="flex space-x-4 mb-8"> ... </div>
+                */}
 
                 {/* Instructions */}
                 <motion.div
