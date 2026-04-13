@@ -126,9 +126,9 @@ export default function AdminDashboard() {
     );
 
     // MongoDB Atlas Cluster State
-    const [mongoCluster, setMongoCluster] = useState<{ name: string; mongoDBVersion: string; stateName: string; providerSettings?: { regionName: string } } | null>(null);
-    const [mongoLoading, setMongoLoading] = useState(false);
-    const [mongoError, setMongoError] = useState<string | null>(null);
+    // const [mongoCluster, setMongoCluster] = useState<{ name: string; mongoDBVersion: string; stateName: string; providerSettings?: { regionName: string } } | null>(null);
+    // const [mongoLoading, setMongoLoading] = useState(false);
+    // const [mongoError, setMongoError] = useState<string | null>(null);
 
     // Inbox State
     const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
             checkSystemHealth();
             fetchRenderConfig();
             fetchEpisodeSettings();
-            fetchMongoCluster();
+            // fetchMongoCluster();
         }
         if (activeTab === 'inbox') {
             fetchMessages();
@@ -282,28 +282,28 @@ export default function AdminDashboard() {
     };
 
     // Fetch MongoDB Atlas cluster status
-    const fetchMongoCluster = async () => {
-        setMongoLoading(true);
-        setMongoError(null);
-        try {
-            const response = await mongoAPI.getClusters();
-            console.log('[Dashboard] MongoDB API response:', response.data);
-            if (response.data?.results && response.data.results.length > 0) {
-                setMongoCluster(response.data.results[0]);
-            } else {
-                setMongoError('No clusters found in the response');
-            }
-        } catch (error: any) {
-            console.error('Error fetching MongoDB cluster:', error);
-            const errorMessage = error.response?.data?.message ||
-                error.response?.data?.error ||
-                error.message ||
-                'Failed to fetch cluster status';
-            setMongoError(errorMessage);
-        } finally {
-            setMongoLoading(false);
-        }
-    };
+    // const fetchMongoCluster = async () => {
+    //     setMongoLoading(true);
+    //     setMongoError(null);
+    //     try {
+    //         const response = await mongoAPI.getClusters();
+    //         console.log('[Dashboard] MongoDB API response:', response.data);
+    //         if (response.data?.results && response.data.results.length > 0) {
+    //             setMongoCluster(response.data.results[0]);
+    //         } else {
+    //             setMongoError('No clusters found in the response');
+    //         }
+    //     } catch (error: any) {
+    //         console.error('Error fetching MongoDB cluster:', error);
+    //         const errorMessage = error.response?.data?.message ||
+    //             error.response?.data?.error ||
+    //             error.message ||
+    //             'Failed to fetch cluster status';
+    //         setMongoError(errorMessage);
+    //     } finally {
+    //         setMongoLoading(false);
+    //     }
+    // };
 
     // Save episode loading settings
     const saveEpisodeSettings = async (): Promise<boolean> => {
