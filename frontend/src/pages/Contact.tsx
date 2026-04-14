@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Mail, MapPin, Send, Globe } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { contactAPI } from '../services/api';
 
 export default function Contact() {
@@ -11,6 +12,9 @@ export default function Contact() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+    const [captchaError, setCaptchaError] = useState(false);
+    const recaptchaRef = useRef<ReCAPTCHA>(null);
 
     // Set page title
     useEffect(() => {
@@ -19,18 +23,30 @@ export default function Contact() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate captcha
+        if (!captchaToken) {
+            setCaptchaError(true);
+            return;
+        }
+
+        setCaptchaError(false);
         setIsSubmitting(true);
 
         try {
-            await contactAPI.submit(formData);
+            await contactAPI.submit({ ...formData, captchaToken });
             setSubmitted(true);
             setFormData({ name: '', email: '', message: '' });
+            setCaptchaToken(null);
+            recaptchaRef.current?.reset();
 
             // Reset success message after 5 seconds
             setTimeout(() => setSubmitted(false), 5000);
         } catch (error) {
             console.error('Error submitting contact form:', error);
             alert('Failed to send message. Please try again.');
+            recaptchaRef.current?.reset();
+            setCaptchaToken(null);
         } finally {
             setIsSubmitting(false);
         }
@@ -38,6 +54,11 @@ export default function Contact() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleCaptchaChange = (token: string | null) => {
+        setCaptchaToken(token);
+        if (token) setCaptchaError(false);
     };
 
     return (
@@ -129,7 +150,7 @@ export default function Contact() {
                             </div>
                         </motion.div>
 
-                        {/* Contact Form - No Subject field */}
+                        {/* Contact Form */}
                         <motion.div
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -195,6 +216,21 @@ export default function Contact() {
                                             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-maroon-500 focus:border-transparent transition-all resize-none"
                                             placeholder="Tell us more about your inquiry..."
                                         />
+                                    </div>
+
+                                    {/* reCAPTCHA */}
+                                    <div>
+                                        <ReCAPTCHA
+                                            ref={recaptchaRef}
+                                            sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                                            onChange={handleCaptchaChange}
+                                            onExpired={() => setCaptchaToken(null)}
+                                        />
+                                        {captchaError && (
+                                            <p className="mt-2 text-sm text-red-600">
+                                                Please complete the CAPTCHA verification.
+                                            </p>
+                                        )}
                                     </div>
 
                                     <button

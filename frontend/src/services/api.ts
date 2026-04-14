@@ -392,7 +392,7 @@ export interface ContactStats {
 // Contact API
 export const contactAPI = {
     // Public - Submit contact form
-    submit: (data: { name: string; email: string; message: string }) =>
+    submit: (data: { name: string; email: string; message: string; captchaToken: string }) =>
         api.post('/contact/submit', data),
 
     // Admin - Get all messages

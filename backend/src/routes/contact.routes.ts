@@ -5,10 +5,33 @@ import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
+// Helper: Verify reCAPTCHA token with Google
+async function verifyRecaptcha(token: string): Promise<boolean> {
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    if (!secretKey) {
+        console.error('RECAPTCHA_SECRET_KEY is not set');
+        return false;
+    }
+
+    const params = new URLSearchParams({
+        secret: secretKey,
+        response: token,
+    });
+
+    const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+    });
+
+    const data = await response.json() as { success: boolean };
+    return data.success === true;
+}
+
 // Public route - Submit contact form
 router.post('/submit', async (req, res) => {
     try {
-        const { name, email, message } = req.body;
+        const { name, email, message, captchaToken } = req.body;
 
         // Validation
         if (!name || !email || !message) {
@@ -19,6 +42,16 @@ router.post('/submit', async (req, res) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'Invalid email address' });
+        }
+
+        // reCAPTCHA validation
+        if (!captchaToken) {
+            return res.status(400).json({ message: 'CAPTCHA verification is required' });
+        }
+
+        const isCaptchaValid = await verifyRecaptcha(captchaToken);
+        if (!isCaptchaValid) {
+            return res.status(400).json({ message: 'CAPTCHA verification failed. Please try again.' });
         }
 
         // Save to database
