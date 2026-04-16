@@ -16,7 +16,7 @@
 
 import { Link } from 'react-router-dom';
 import { LogOut, Menu } from 'lucide-react';
-import logoImage from '../../assets/logo.jpg';
+// import logoImage from '../../assets/logo.jpg';
 
 interface AdminHeaderProps {
     userName?: string;
