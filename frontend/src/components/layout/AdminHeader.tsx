@@ -51,22 +51,6 @@ export default function AdminHeader({
                             </button>
                         )}
 
-                        {/* Logo — links back to dashboard */}
-                        <Link
-                            to="/admin/dashboard"
-                            className="flex items-center space-x-3 shrink-0"
-                        >
-                            <img
-                                src={logoImage}
-                                alt="Business Talk Logo"
-                                className="h-10 w-10 object-contain rounded-full"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src =
-                                        'https://ui-avatars.com/api/?name=BT&size=200&background=800000&color=fff&bold=true';
-                                }}
-                            />
-                        </Link>
-
                         <div>
                             <h1 className="text-base font-bold text-gray-900">
                                 Admin Dashboard
