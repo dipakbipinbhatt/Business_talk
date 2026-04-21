@@ -1,14 +1,23 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, ArrowUp, AlignJustify, LayoutGrid } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PodcastCard from '../components/podcast/PodcastCard';
 import StayUpdated from '../components/layout/StayUpdated';
 import { podcastAPI, Podcast, settingsAPI, SiteSettings } from '../services/api';
 import logoImage from '../assets/logo.jpg';
 
+const PAGE_SIZE = 10; // records per paginated page
+
 export default function Home() {
-    // Upcoming podcasts state - server-side pagination
+    // Active view & display mode
+    const [activeView, setActiveView] = useState<'upcoming' | 'past'>('upcoming');
+    const [isPaginated, setIsPaginated] = useState(false);
+
+    // Scroll-to-top visibility
+    const [showScrollTop, setShowScrollTop] = useState(false);
+
+    // ── Upcoming: infinite scroll state ──────────────────────────────────
     const [upcomingPodcasts, setUpcomingPodcasts] = useState<Podcast[]>([]);
     const [upcomingTotal, setUpcomingTotal] = useState(0);
     const [upcomingPage, setUpcomingPage] = useState(1);
@@ -16,8 +25,15 @@ export default function Home() {
     const [isLoadingMoreUpcoming, setIsLoadingMoreUpcoming] = useState(false);
     const upcomingObserverRef = useRef<IntersectionObserver | null>(null);
     const upcomingLoadMoreRef = useRef<HTMLDivElement | null>(null);
+    const upcomingInitialLoadDone = useRef(false);
 
-    // Past podcasts state - server-side pagination
+    // ── Upcoming: paginated state ─────────────────────────────────────────
+    const [upcomingPagedData, setUpcomingPagedData] = useState<Podcast[]>([]);
+    const [upcomingPagedPage, setUpcomingPagedPage] = useState(1);
+    const [upcomingPagedTotal, setUpcomingPagedTotal] = useState(0);
+    const [isUpcomingPagedLoading, setIsUpcomingPagedLoading] = useState(false);
+
+    // ── Past: infinite scroll state ───────────────────────────────────────
     const [pastPodcasts, setPastPodcasts] = useState<Podcast[]>([]);
     const [pastTotal, setPastTotal] = useState(0);
     const [pastPage, setPastPage] = useState(1);
@@ -25,10 +41,14 @@ export default function Home() {
     const [isLoadingMorePast, setIsLoadingMorePast] = useState(false);
     const pastObserverRef = useRef<IntersectionObserver | null>(null);
     const pastLoadMoreRef = useRef<HTMLDivElement | null>(null);
-
-    // Guards to prevent intersection observer firing before initial load completes
     const pastInitialLoadDone = useRef(false);
-    const upcomingInitialLoadDone = useRef(false);
+    const isLoadingMorePastRef = useRef(false); // ref mirror to avoid stale closures
+
+    // ── Past: paginated state ─────────────────────────────────────────────
+    const [pastPagedData, setPastPagedData] = useState<Podcast[]>([]);
+    const [pastPagedPage, setPastPagedPage] = useState(1);
+    const [pastPagedTotal, setPastPagedTotal] = useState(0);
+    const [isPastPagedLoading, setIsPastPagedLoading] = useState(false);
 
     const [error, setError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
@@ -42,19 +62,27 @@ export default function Home() {
     });
     const [settingsLoaded, setSettingsLoaded] = useState(false);
 
-    // Set page title
+    // ── Page title ────────────────────────────────────────────────────────
     useEffect(() => {
         document.title = "Business Talk | The World's Premier Research-Focused Podcast Series";
     }, []);
 
-    // Fetch settings FIRST, then fetch podcasts
+    // ── Scroll-to-top listener ────────────────────────────────────────────
+    useEffect(() => {
+        const onScroll = () => setShowScrollTop(window.scrollY > 300);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // ── Fetch settings ────────────────────────────────────────────────────
     useEffect(() => {
         const fetchSettings = async () => {
             try {
                 const response = await settingsAPI.get();
                 setSettings(response.data);
-                console.log('[Home] Settings loaded:', response.data);
-            } catch (error) {
+            } catch {
                 console.log('[Home] Using default settings');
             } finally {
                 setSettingsLoaded(true);
@@ -63,53 +91,36 @@ export default function Home() {
         fetchSettings();
     }, []);
 
-    // Fetch INITIAL upcoming podcasts (only after settings loaded)
+    // ── Fetch initial UPCOMING (infinite scroll) ──────────────────────────
     useEffect(() => {
         if (!settingsLoaded) return;
-
-        const fetchUpcoming = async () => {
-            upcomingInitialLoadDone.current = false; // reset guard before fetch
+        const fetch = async () => {
+            upcomingInitialLoadDone.current = false;
             setIsUpcomingLoading(true);
-            console.log(`[Home] Fetching upcoming podcasts - page 1, limit ${settings.upcomingInitialLoad}`);
             try {
-                const response = await podcastAPI.getAll({
-                    category: 'upcoming',
-                    limit: settings.upcomingInitialLoad,
-                    page: 1
-                });
-                setUpcomingPodcasts(response.data.podcasts || []);
-                setUpcomingTotal(response.data.pagination?.total || 0);
+                const res = await podcastAPI.getAll({ category: 'upcoming', limit: settings.upcomingInitialLoad, page: 1 });
+                setUpcomingPodcasts(res.data.podcasts || []);
+                setUpcomingTotal(res.data.pagination?.total || 0);
                 setUpcomingPage(1);
-                console.log(`[Home] Got ${response.data.podcasts?.length}/${response.data.pagination?.total} upcoming podcasts`);
             } catch (err) {
-                console.error('[Home] Error fetching upcoming podcasts:', err);
+                console.error('[Home] Error fetching upcoming:', err);
             } finally {
                 setIsUpcomingLoading(false);
-                upcomingInitialLoadDone.current = true; // mark initial load complete
+                upcomingInitialLoadDone.current = true;
             }
         };
-
-        fetchUpcoming();
+        fetch();
     }, [settingsLoaded, retryCount, settings.upcomingInitialLoad]);
 
-    // Load MORE upcoming podcasts on scroll
+    // ── Load more UPCOMING (infinite scroll) ─────────────────────────────
     const loadMoreUpcoming = useCallback(async () => {
         if (isLoadingMoreUpcoming || upcomingPodcasts.length >= upcomingTotal) return;
-
         setIsLoadingMoreUpcoming(true);
         const nextPage = upcomingPage + 1;
-        console.log(`[Home] Loading more upcoming - page ${nextPage}, limit ${settings.upcomingBatchSize}`);
-
         try {
-            const response = await podcastAPI.getAll({
-                category: 'upcoming',
-                limit: settings.upcomingBatchSize,
-                page: nextPage
-            });
-            const newPodcasts = response.data.podcasts || [];
-            setUpcomingPodcasts(prev => [...prev, ...newPodcasts]);
+            const res = await podcastAPI.getAll({ category: 'upcoming', limit: settings.upcomingBatchSize, page: nextPage });
+            setUpcomingPodcasts(prev => [...prev, ...(res.data.podcasts || [])]);
             setUpcomingPage(nextPage);
-            console.log(`[Home] Added ${newPodcasts.length} more upcoming podcasts`);
         } catch (err) {
             console.error('[Home] Error loading more upcoming:', err);
         } finally {
@@ -117,158 +128,203 @@ export default function Home() {
         }
     }, [upcomingPodcasts.length, upcomingTotal, upcomingPage, isLoadingMoreUpcoming, settings.upcomingBatchSize]);
 
-    // Intersection observer for upcoming scroll
+    // ── Intersection observer: UPCOMING ───────────────────────────────────
     useEffect(() => {
+        if (isPaginated) return; // don't observe in paginated mode
         if (upcomingObserverRef.current) upcomingObserverRef.current.disconnect();
+        upcomingObserverRef.current = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && upcomingInitialLoadDone.current && !isUpcomingLoading && !isLoadingMoreUpcoming && upcomingPodcasts.length < upcomingTotal) {
+                loadMoreUpcoming();
+            }
+        }, { threshold: 0.1 });
+        if (upcomingLoadMoreRef.current) upcomingObserverRef.current.observe(upcomingLoadMoreRef.current);
+        return () => { if (upcomingObserverRef.current) upcomingObserverRef.current.disconnect(); };
+    }, [loadMoreUpcoming, isUpcomingLoading, isLoadingMoreUpcoming, upcomingPodcasts.length, upcomingTotal, isPaginated]);
 
-        upcomingObserverRef.current = new IntersectionObserver(
-            (entries) => {
-                if (
-                    entries[0].isIntersecting &&
-                    upcomingInitialLoadDone.current && // guard: only after initial load
-                    !isUpcomingLoading &&
-                    !isLoadingMoreUpcoming &&
-                    upcomingPodcasts.length < upcomingTotal
-                ) {
-                    loadMoreUpcoming();
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        if (upcomingLoadMoreRef.current) {
-            upcomingObserverRef.current.observe(upcomingLoadMoreRef.current);
+    // ── Fetch UPCOMING paginated page ─────────────────────────────────────
+    const fetchUpcomingPaged = useCallback(async (page: number) => {
+        setIsUpcomingPagedLoading(true);
+        try {
+            const res = await podcastAPI.getAll({ category: 'upcoming', limit: PAGE_SIZE, page });
+            setUpcomingPagedData(res.data.podcasts || []);
+            setUpcomingPagedTotal(res.data.pagination?.total || 0);
+            setUpcomingPagedPage(page);
+        } catch (err) {
+            console.error('[Home] Error fetching upcoming paged:', err);
+        } finally {
+            setIsUpcomingPagedLoading(false);
         }
+    }, []);
 
-        return () => {
-            if (upcomingObserverRef.current) upcomingObserverRef.current.disconnect();
-        };
-    }, [loadMoreUpcoming, isUpcomingLoading, isLoadingMoreUpcoming, upcomingPodcasts.length, upcomingTotal]);
-
-    // Fetch INITIAL past podcasts (only after settings loaded)
+    // ── Fetch initial PAST (infinite scroll) ──────────────────────────────
     useEffect(() => {
         if (!settingsLoaded) return;
-
-        const fetchPast = async () => {
-            pastInitialLoadDone.current = false; // reset guard before fetch
+        const fetch = async () => {
+            pastInitialLoadDone.current = false;
             setIsPastLoading(true);
             setError(null);
-            console.log(`[Home] Fetching past podcasts - page 1, limit ${settings.pastInitialLoad}`);
-
             try {
-                const response = await podcastAPI.getAll({
-                    category: 'past',
-                    limit: settings.pastInitialLoad,
-                    page: 1
-                    // Note: thumbnailImage is included to show uploaded promotional images
-                });
-                setPastPodcasts(response.data.podcasts || []);
-                setPastTotal(response.data.pagination?.total || 0);
+                const res = await podcastAPI.getAll({ category: 'past', limit: settings.pastInitialLoad, page: 1 });
+                setPastPodcasts(res.data.podcasts || []);
+                setPastTotal(res.data.pagination?.total || 0);
                 setPastPage(1);
-                console.log(`[Home] Got ${response.data.podcasts?.length}/${response.data.pagination?.total} past podcasts`);
             } catch (err) {
-                console.error('[Home] Error fetching past podcasts:', err);
+                console.error('[Home] Error fetching past:', err);
                 setError('Failed to load podcasts. Please try again later.');
             } finally {
                 setIsPastLoading(false);
-                pastInitialLoadDone.current = true; // mark initial load complete
+                pastInitialLoadDone.current = true;
             }
         };
-
-        fetchPast();
+        fetch();
     }, [settingsLoaded, retryCount, settings.pastInitialLoad]);
 
-    // Load MORE past podcasts on scroll
+    // ── Load more PAST (infinite scroll) ─────────────────────────────────
     const loadMorePast = useCallback(async () => {
-        if (isLoadingMorePast || pastPodcasts.length >= pastTotal) return;
-
+        if (isLoadingMorePastRef.current || pastPodcasts.length >= pastTotal) return;
+        isLoadingMorePastRef.current = true;
         setIsLoadingMorePast(true);
         const nextPage = pastPage + 1;
-        console.log(`[Home] Loading more past - page ${nextPage}, limit ${settings.pastBatchSize}`);
-
         try {
-            const response = await podcastAPI.getAll({
-                category: 'past',
-                limit: settings.pastBatchSize,
-                page: nextPage
-                // Note: thumbnailImage is included to show uploaded promotional images
-            });
-            const newPodcasts = response.data.podcasts || [];
-            setPastPodcasts(prev => [...prev, ...newPodcasts]);
+            const res = await podcastAPI.getAll({ category: 'past', limit: settings.pastBatchSize, page: nextPage });
+            setPastPodcasts(prev => [...prev, ...(res.data.podcasts || [])]);
             setPastPage(nextPage);
-            console.log(`[Home] Added ${newPodcasts.length} more past podcasts`);
         } catch (err) {
             console.error('[Home] Error loading more past:', err);
         } finally {
+            isLoadingMorePastRef.current = false;
             setIsLoadingMorePast(false);
         }
-    }, [pastPodcasts.length, pastTotal, pastPage, isLoadingMorePast, settings.pastBatchSize]);
+    }, [pastPodcasts.length, pastTotal, pastPage, settings.pastBatchSize]);
 
-    // Intersection observer for past scroll
+    // ── Intersection observer: PAST ───────────────────────────────────────
     useEffect(() => {
-        if (pastObserverRef.current) pastObserverRef.current.disconnect();
-
-        pastObserverRef.current = new IntersectionObserver(
-            (entries) => {
-                if (
-                    entries[0].isIntersecting &&
-                    pastInitialLoadDone.current && // guard: only after initial load
-                    !isPastLoading &&
-                    !isLoadingMorePast &&
-                    pastPodcasts.length < pastTotal
-                ) {
-                    loadMorePast();
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        if (pastLoadMoreRef.current) {
-            pastObserverRef.current.observe(pastLoadMoreRef.current);
-        }
-
-        return () => {
+        // Only observe when past view is active and in scroll mode
+        if (isPaginated || activeView !== 'past') {
             if (pastObserverRef.current) pastObserverRef.current.disconnect();
-        };
-    }, [loadMorePast, isPastLoading, isLoadingMorePast, pastPodcasts.length, pastTotal]);
+            return;
+        }
+        if (pastObserverRef.current) pastObserverRef.current.disconnect();
+        pastObserverRef.current = new IntersectionObserver((entries) => {
+            if (
+                entries[0].isIntersecting &&
+                pastInitialLoadDone.current &&
+                !isPastLoading &&
+                !isLoadingMorePastRef.current &&
+                pastPodcasts.length < pastTotal
+            ) {
+                loadMorePast();
+            }
+        }, { threshold: 0.1 });
+        if (pastLoadMoreRef.current) pastObserverRef.current.observe(pastLoadMoreRef.current);
+        return () => { if (pastObserverRef.current) pastObserverRef.current.disconnect(); };
+    }, [loadMorePast, isPastLoading, pastPodcasts.length, pastTotal, isPaginated, activeView]);
 
-    const handleRetry = () => {
+    // ── Fetch PAST paginated page ─────────────────────────────────────────
+    const fetchPastPaged = useCallback(async (page: number) => {
+        setIsPastPagedLoading(true);
         setError(null);
-        setRetryCount(prev => prev + 1);
+        try {
+            const res = await podcastAPI.getAll({ category: 'past', limit: PAGE_SIZE, page });
+            setPastPagedData(res.data.podcasts || []);
+            setPastPagedTotal(res.data.pagination?.total || 0);
+            setPastPagedPage(page);
+        } catch (err) {
+            console.error('[Home] Error fetching past paged:', err);
+            setError('Failed to load podcasts. Please try again later.');
+        } finally {
+            setIsPastPagedLoading(false);
+        }
+    }, []);
+
+    // ── When switching TO paginated mode, fetch page 1 for active view ────
+    // When switching BACK to scroll, reset past state so it re-fetches cleanly
+    useEffect(() => {
+        if (!settingsLoaded) return;
+        if (isPaginated) {
+            if (activeView === 'upcoming') fetchUpcomingPaged(1);
+            else fetchPastPaged(1);
+        } else {
+            // Returning to scroll mode — re-fetch past cleanly
+            fetchPastScroll();
+        }
+    }, [isPaginated, settingsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ── Fetch past scroll data fresh (used on view switch & mode switch) ───
+    const fetchPastScroll = useCallback(() => {
+        pastInitialLoadDone.current = false;
+        isLoadingMorePastRef.current = false;
+        setIsPastLoading(true);
+        setIsLoadingMorePast(false);
+        setPastPodcasts([]);
+        setPastPage(1);
+        podcastAPI.getAll({ category: 'past', limit: settings.pastInitialLoad, page: 1 })
+            .then(res => {
+                setPastPodcasts(res.data.podcasts || []);
+                setPastTotal(res.data.pagination?.total || 0);
+                setPastPage(1);
+            })
+            .catch(err => console.error('[Home] Error fetching past scroll:', err))
+            .finally(() => {
+                setIsPastLoading(false);
+                pastInitialLoadDone.current = true;
+            });
+    }, [settings.pastInitialLoad]);
+
+    // ── When switching view ───────────────────────────────────────────────
+    const handleViewSwitch = (view: 'upcoming' | 'past') => {
+        setActiveView(view);
+        if (isPaginated) {
+            if (view === 'upcoming') fetchUpcomingPaged(1);
+            else fetchPastPaged(1);
+        } else if (view === 'past') {
+            // Always re-fetch past when switching to it in scroll mode
+            fetchPastScroll();
+        }
+    };
+
+    const handleRetry = () => { setError(null); setRetryCount(prev => prev + 1); };
+
+    // ── Derived pagination values ─────────────────────────────────────────
+    const pagedData      = activeView === 'upcoming' ? upcomingPagedData  : pastPagedData;
+    const pagedTotal     = activeView === 'upcoming' ? upcomingPagedTotal : pastPagedTotal;
+    const pagedPage      = activeView === 'upcoming' ? upcomingPagedPage  : pastPagedPage;
+    const isPagedLoading = activeView === 'upcoming' ? isUpcomingPagedLoading : isPastPagedLoading;
+    const totalPages     = Math.ceil(pagedTotal / PAGE_SIZE);
+
+    const goToPage = (page: number) => {
+        if (page < 1 || page > totalPages) return;
+        if (activeView === 'upcoming') fetchUpcomingPaged(page);
+        else fetchPastPaged(page);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Build page number array with ellipsis logic
+    const getPageNumbers = () => {
+        if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+        const pages: (number | '...')[] = [];
+        if (pagedPage <= 4) {
+            pages.push(1, 2, 3, 4, 5, '...', totalPages);
+        } else if (pagedPage >= totalPages - 3) {
+            pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+        } else {
+            pages.push(1, '...', pagedPage - 1, pagedPage, pagedPage + 1, '...', totalPages);
+        }
+        return pages;
     };
 
     return (
         <div className="min-h-screen bg-white">
-            {/* Hero Section - Pure white background */}
+            {/* ── Hero Section ─────────────────────────────────────────── */}
             <section className="py-12 md:py-16 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="text-center"
-                    >
-                        {/* Larger Logo - no "Business Talk" text */}
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-center">
                         <div className="flex justify-center mb-6">
-                            <img
-                                src={logoImage}
-                                alt="Business Talk Logo"
-                                className="w-40 h-40 object-contain rounded-full shadow-lg"
-                            />
+                            <img src={logoImage} alt="Business Talk Logo" className="w-40 h-40 object-contain rounded-full shadow-lg" />
                         </div>
-
-                        {/* Banner Image */}
                         <div className="flex justify-center mb-8">
-                            <img
-                                src="/banner.png"
-                                alt="Business Talk Banner"
-                                className="w-full max-w-4xl object-contain rounded-lg shadow-md"
-                                fetchPriority="high"
-                                decoding="async"
-                            />
+                            <img src="/banner.png" alt="Business Talk Banner" className="w-full max-w-4xl object-contain rounded-lg shadow-md" fetchPriority="high" decoding="async" />
                         </div>
-
-                        {/* Welcome text - dark black headers */}
                         <p className="text-base text-gray-800 max-w-4xl mx-auto mb-6 text-justify" style={{ lineHeight: '1.75rem' }}>
                             Welcome to Business Talk, your premier podcast for cutting-edge trends,
                             groundbreaking research, valuable insights from notable books, and engaging
@@ -277,12 +333,10 @@ export default function Home() {
                             spark actionable ideas. Our goal is to deliver valuable research insights from the world's renowned scholars,
                             sharing their unique perspectives and expertise.
                         </p>
-
                         <p className="text-base text-gray-800 max-w-4xl mx-auto mb-6 text-justify" style={{ lineHeight: '1.75rem' }}>
                             <strong className="text-gray-900">How do we select our speakers?:</strong> The Business Talk committee identifies speakers after a meticulous screening process. These
                             experts are then invited. That is, participation as a speaker is by invitation only. We remain committed to delivering free, high-quality content to our research community and are dedicated to maintaining this model in the future.
                         </p>
-
                         <p className="text-base text-gray-800 max-w-4xl mx-auto text-justify" style={{ lineHeight: '1.75rem' }}>
                             Brought to you by <a href="https://www.globalmanagementconsultancy.com/" target="_blank" rel="noopener noreferrer" className="text-maroon-700 hover:underline font-medium">Global Management Consultancy</a>,
                             we are committed to driving innovation and excellence in the business community. The podcast recordings are available in both video and audio formats on this webpage.
@@ -292,130 +346,239 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* Upcoming Podcasts Section */}
-            <section className="py-8 sm:py-12 bg-white">
+            {/* ── Sticky Control Bar ───────────────────────────────────── */}
+            <div className="sticky top-16 z-30 bg-white border-b border-gray-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
-                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
-                                Upcoming Podcast Episodes
-                            </h2>
-                            <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-100 text-green-700 font-semibold rounded-full text-xs sm:text-sm whitespace-nowrap">
-                                {upcomingTotal} Scheduled
-                            </span>
+                    <div className="flex items-center justify-between py-3 gap-3">
+
+                        {/* Left: View tab buttons */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => handleViewSwitch('upcoming')}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
+                                    activeView === 'upcoming'
+                                        ? 'bg-maroon-700 text-white shadow-sm'
+                                        : 'bg-white text-gray-600 border border-gray-300 hover:border-maroon-300 hover:text-maroon-700'
+                                }`}
+                            >
+                                Upcoming Episodes
+                            </button>
+                            <button
+                                onClick={() => handleViewSwitch('past')}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
+                                    activeView === 'past'
+                                        ? 'bg-maroon-700 text-white shadow-sm'
+                                        : 'bg-white text-gray-600 border border-gray-300 hover:border-maroon-300 hover:text-maroon-700'
+                                }`}
+                            >
+                                Previous Episodes
+                            </button>
                         </div>
 
-                        {isUpcomingLoading ? (
-                            <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
-                                {[1, 2, 3, 4].map((i) => (
-                                    <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse"></div>
-                                ))}
-                            </div>
-                        ) : upcomingPodcasts.length === 0 ? (
-                            <div className="text-center py-12">
-                                <p className="text-gray-500">No upcoming podcasts scheduled. Check back soon!</p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
-                                    {upcomingPodcasts.map((podcast: Podcast) => (
-                                        <PodcastCard key={podcast._id} podcast={podcast} variant="thumbnail-only" />
-                                    ))}
-                                </div>
-
-                                {/* Infinite scroll sentinel for upcoming */}
-                                {upcomingPodcasts.length < upcomingTotal && (
-                                    <div ref={upcomingLoadMoreRef} className="flex justify-center py-8">
-                                        {isLoadingMoreUpcoming && (
-                                            <div className="flex items-center gap-2 text-maroon-700">
-                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-maroon-700"></div>
-                                                <span>Loading more episodes...</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </motion.div>
+                        {/* Right: Pagination toggle */}
+                        <button
+                            onClick={() => setIsPaginated(prev => !prev)}
+                            title={isPaginated ? 'Switch to Infinite Scroll' : 'Switch to Pagination'}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 whitespace-nowrap ${
+                                isPaginated
+                                    ? 'bg-maroon-700 text-white border-maroon-700 shadow-sm'
+                                    : 'bg-white text-gray-600 border-gray-300 hover:border-maroon-300 hover:text-maroon-700'
+                            }`}
+                        >
+                            {isPaginated
+                                ? <><LayoutGrid className="w-4 h-4" /><span className="hidden sm:inline">Paginated</span></>
+                                : <><AlignJustify className="w-4 h-4" /><span className="hidden sm:inline">Scroll</span></>
+                            }
+                        </button>
+                    </div>
                 </div>
-            </section>
+            </div>
 
-            {/* Previous Podcasts Section */}
-            <section className="py-16 bg-gray-100 shadow-inner">
+            {/* ── Podcast Content Section ──────────────────────────────── */}
+            <section className={`py-8 sm:py-12 ${activeView === 'past' ? 'bg-gray-100 shadow-inner' : 'bg-white'}`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5 }}
-                    >
+                    <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+
+                        {/* Section header */}
                         <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
                             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
-                                Previous Episodes
+                                {activeView === 'upcoming' ? 'Upcoming Podcast Episodes' : 'Previous Episodes'}
                             </h2>
-                            {pastTotal > 0 && (
-                                <Link
-                                    to="/podcasts"
-                                    className="flex items-center space-x-2 text-maroon-700 hover:text-maroon-800 font-semibold transition-colors group whitespace-nowrap text-sm sm:text-base"
-                                >
-                                    <span>View&nbsp;All</span>
-                                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-                                </Link>
+                            {activeView === 'upcoming' ? (
+                                <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-100 text-green-700 font-semibold rounded-full text-xs sm:text-sm whitespace-nowrap">
+                                    {upcomingTotal} Scheduled
+                                </span>
+                            ) : (
+                                pastTotal > 0 && (
+                                    <Link to="/podcasts" className="flex items-center space-x-2 text-maroon-700 hover:text-maroon-800 font-semibold transition-colors group whitespace-nowrap text-sm sm:text-base">
+                                        <span>View&nbsp;All</span>
+                                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+                                    </Link>
+                                )
                             )}
                         </div>
 
-                        {isPastLoading ? (
-                            <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
-                                {[1, 2, 3, 4].map((i) => (
-                                    <div key={i} className="bg-gray-200 rounded-lg h-96 animate-pulse"></div>
-                                ))}
-                            </div>
-                        ) : error ? (
-                            <div className="text-center py-12">
-                                <p className="text-red-600 mb-4">{error}</p>
-                                <button
-                                    onClick={handleRetry}
-                                    className="px-6 py-3 bg-maroon-700 text-white font-semibold rounded-lg hover:bg-maroon-800 transition-colors"
-                                >
-                                    Retry
-                                </button>
-                            </div>
-                        ) : pastPodcasts.length === 0 ? (
-                            <div className="text-center py-12">
-                                <p className="text-gray-500">No previous podcasts available yet.</p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
-                                    {pastPodcasts.map((podcast: Podcast) => (
-                                        <PodcastCard key={podcast._id} podcast={podcast} variant="grid" />
-                                    ))}
-                                </div>
-
-                                {/* Infinite scroll sentinel for past */}
-                                {pastPodcasts.length < pastTotal && (
-                                    <div ref={pastLoadMoreRef} className="flex justify-center mt-8">
-                                        {isLoadingMorePast && (
-                                            <div className="flex items-center gap-2 text-maroon-700">
-                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-maroon-700"></div>
-                                                <span>Loading more podcasts...</span>
+                        {/* ── Content: animated view swap ────────────────── */}
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeView}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.25 }}
+                            >
+                                {isPaginated ? (
+                                    /* ── PAGINATED VIEW ── */
+                                    <>
+                                        {isPagedLoading ? (
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                                                    <div key={i} className={`rounded-2xl h-80 animate-pulse ${activeView === 'past' ? 'bg-gray-200' : 'bg-gray-100'}`} />
+                                                ))}
+                                            </div>
+                                        ) : pagedData.length === 0 ? (
+                                            <div className="text-center py-12">
+                                                <p className="text-gray-500">{activeView === 'upcoming' ? 'No upcoming podcasts scheduled.' : 'No previous podcasts available yet.'}</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                {pagedData.map((podcast: Podcast) => (
+                                                    <PodcastCard key={podcast._id} podcast={podcast} variant={activeView === 'upcoming' ? 'thumbnail-only' : 'grid'} />
+                                                ))}
                                             </div>
                                         )}
-                                    </div>
+
+                                        {/* Pagination controls */}
+                                        {!isPagedLoading && totalPages > 1 && (
+                                            <div className="flex items-center justify-center gap-1 mt-10 flex-wrap">
+                                                {/* Prev */}
+                                                <button
+                                                    onClick={() => goToPage(pagedPage - 1)}
+                                                    disabled={pagedPage === 1}
+                                                    className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:border-maroon-400 hover:text-maroon-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                                >
+                                                    ← Prev
+                                                </button>
+
+                                                {/* Page numbers */}
+                                                {getPageNumbers().map((p, idx) =>
+                                                    p === '...' ? (
+                                                        <span key={`ellipsis-${idx}`} className="px-2 py-2 text-gray-400 text-sm select-none">…</span>
+                                                    ) : (
+                                                        <button
+                                                            key={p}
+                                                            onClick={() => goToPage(p as number)}
+                                                            className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
+                                                                pagedPage === p
+                                                                    ? 'bg-maroon-700 text-white shadow-sm'
+                                                                    : 'border border-gray-300 text-gray-600 hover:border-maroon-400 hover:text-maroon-700'
+                                                            }`}
+                                                        >
+                                                            {p}
+                                                        </button>
+                                                    )
+                                                )}
+
+                                                {/* Next */}
+                                                <button
+                                                    onClick={() => goToPage(pagedPage + 1)}
+                                                    disabled={pagedPage === totalPages}
+                                                    className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:border-maroon-400 hover:text-maroon-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                                >
+                                                    Next →
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : activeView === 'upcoming' ? (
+                                    /* ── UPCOMING INFINITE SCROLL ── */
+                                    <>
+                                        {isUpcomingLoading ? (
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                {[1, 2, 3, 4].map(i => <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />)}
+                                            </div>
+                                        ) : upcomingPodcasts.length === 0 ? (
+                                            <div className="text-center py-12"><p className="text-gray-500">No upcoming podcasts scheduled. Check back soon!</p></div>
+                                        ) : (
+                                            <>
+                                                <div className="grid md:grid-cols-2 gap-6">
+                                                    {upcomingPodcasts.map((podcast: Podcast) => (
+                                                        <PodcastCard key={podcast._id} podcast={podcast} variant="thumbnail-only" />
+                                                    ))}
+                                                </div>
+                                                {upcomingPodcasts.length < upcomingTotal && (
+                                                    <div ref={upcomingLoadMoreRef} className="flex justify-center py-8">
+                                                        {isLoadingMoreUpcoming && (
+                                                            <div className="flex items-center gap-2 text-maroon-700">
+                                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-maroon-700" />
+                                                                <span>Loading more episodes...</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </>
+                                ) : (
+                                    /* ── PAST INFINITE SCROLL ── */
+                                    <>
+                                        {isPastLoading ? (
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                {[1, 2, 3, 4].map(i => <div key={i} className="bg-gray-200 rounded-lg h-96 animate-pulse" />)}
+                                            </div>
+                                        ) : error ? (
+                                            <div className="text-center py-12">
+                                                <p className="text-red-600 mb-4">{error}</p>
+                                                <button onClick={handleRetry} className="px-6 py-3 bg-maroon-700 text-white font-semibold rounded-lg hover:bg-maroon-800 transition-colors">Retry</button>
+                                            </div>
+                                        ) : pastPodcasts.length === 0 ? (
+                                            <div className="text-center py-12"><p className="text-gray-500">No previous podcasts available yet.</p></div>
+                                        ) : (
+                                            <>
+                                                <div className="grid md:grid-cols-2 gap-6">
+                                                    {pastPodcasts.map((podcast: Podcast) => (
+                                                        <PodcastCard key={podcast._id} podcast={podcast} variant="grid" />
+                                                    ))}
+                                                </div>
+                                                {pastPodcasts.length < pastTotal && (
+                                                    <div ref={pastLoadMoreRef} className="flex justify-center mt-8">
+                                                        {isLoadingMorePast && (
+                                                            <div className="flex items-center gap-2 text-maroon-700">
+                                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-maroon-700" />
+                                                                <span>Loading more podcasts...</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </>
                                 )}
-                            </>
-                        )}
+                            </motion.div>
+                        </AnimatePresence>
                     </motion.div>
                 </div>
             </section>
 
-            {/* Stay Updated Section */}
+            {/* Stay Updated */}
             <StayUpdated />
+
+            {/* ── Scroll-to-top button ─────────────────────────────────── */}
+            <AnimatePresence>
+                {showScrollTop && (
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.2 }}
+                        onClick={scrollToTop}
+                        aria-label="Scroll to top"
+                        className="fixed bottom-6 right-6 z-50 w-11 h-11 bg-maroon-700 hover:bg-maroon-800 text-white rounded-full shadow-lg flex items-center justify-center transition-colors duration-200"
+                    >
+                        <ArrowUp className="w-5 h-5" />
+                    </motion.button>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
