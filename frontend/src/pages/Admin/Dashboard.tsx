@@ -136,6 +136,7 @@ export default function AdminDashboard() {
     const [messagesLoading, setMessagesLoading] = useState(false);
     const [contactStats, setContactStats] = useState<ContactStats>({ total: 0, unread: 0, read: 0, archived: 0 });
     const [messageFilter, setMessageFilter] = useState<'all' | 'unread' | 'read' | 'archived'>('all');
+    const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
 
     // Calendar State
     const [calCurrentDate, setCalCurrentDate] = useState(new Date());
@@ -393,6 +394,18 @@ export default function AdminDashboard() {
             fetchMessages();
         } catch (error) {
             console.error('Error deleting message:', error);
+        }
+    };
+
+    // Update message status (used by the detail modal for Archive / Mark-unread)
+    const handleUpdateMessageStatus = async (id: string, status: 'unread' | 'read' | 'archived') => {
+        try {
+            const res = await contactAPI.updateStatus(id, status);
+            fetchMessages();
+            // Keep the modal in sync with the updated status
+            setSelectedMessage(prev => (prev && prev._id === id ? res.data.data : prev));
+        } catch (error) {
+            console.error('Error updating message status:', error);
         }
     };
 
@@ -2160,6 +2173,7 @@ export default function AdminDashboard() {
                                             className={`p-6 hover:bg-gray-50 transition-colors cursor-pointer ${message.status === 'unread' ? 'bg-blue-50' : ''
                                                 }`}
                                             onClick={() => {
+                                                setSelectedMessage(message);
                                                 if (message.status === 'unread') {
                                                     handleMarkAsRead(message._id);
                                                 }
@@ -2197,6 +2211,111 @@ export default function AdminDashboard() {
                                 )}
                             </div>
                         </div>
+
+                        {/* Message Detail Modal */}
+                        {selectedMessage && (
+                            <div
+                                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                                onClick={() => setSelectedMessage(null)}
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby="message-modal-title"
+                            >
+                                <div
+                                    className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {/* Header */}
+                                    <div className="p-6 border-b flex items-start justify-between gap-4">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 id="message-modal-title" className="text-xl font-bold text-gray-900 truncate">
+                                                    {selectedMessage.name}
+                                                </h3>
+                                                <span
+                                                    className={`px-2 py-0.5 text-xs font-medium rounded-full whitespace-nowrap ${
+                                                        selectedMessage.status === 'unread'
+                                                            ? 'bg-blue-100 text-blue-700'
+                                                            : selectedMessage.status === 'read'
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : 'bg-gray-100 text-gray-700'
+                                                    }`}
+                                                >
+                                                    {selectedMessage.status}
+                                                </span>
+                                            </div>
+                                            <a
+                                                href={`mailto:${selectedMessage.email}`}
+                                                className="text-sm text-maroon-700 hover:underline break-all"
+                                            >
+                                                {selectedMessage.email}
+                                            </a>
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                {new Date(selectedMessage.createdAt).toLocaleString()}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => setSelectedMessage(null)}
+                                            className="p-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 flex-shrink-0"
+                                            aria-label="Close"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
+
+                                    {/* Body */}
+                                    <div className="p-6 overflow-y-auto flex-1">
+                                        <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                            {selectedMessage.message}
+                                        </p>
+                                    </div>
+
+                                    {/* Footer actions */}
+                                    <div className="p-4 border-t bg-gray-50 flex flex-wrap justify-between items-center gap-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <a
+                                                href={`mailto:${selectedMessage.email}?subject=${encodeURIComponent('Re: your message to Business Talk')}`}
+                                                className="px-4 py-2 bg-maroon-700 text-white rounded-lg hover:bg-maroon-800 text-sm font-medium inline-flex items-center gap-2"
+                                            >
+                                                <Mail className="w-4 h-4" />
+                                                Reply via Email
+                                            </a>
+                                            {selectedMessage.status !== 'archived' ? (
+                                                <button
+                                                    onClick={() => handleUpdateMessageStatus(selectedMessage._id, 'archived')}
+                                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 text-sm font-medium"
+                                                >
+                                                    Archive
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleUpdateMessageStatus(selectedMessage._id, 'read')}
+                                                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 text-sm font-medium"
+                                                >
+                                                    Unarchive
+                                                </button>
+                                            )}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const idToDelete = selectedMessage._id;
+                                                if (!confirm('Are you sure you want to delete this message?')) return;
+                                                contactAPI.delete(idToDelete)
+                                                    .then(() => {
+                                                        fetchMessages();
+                                                        setSelectedMessage(null);
+                                                    })
+                                                    .catch((err) => console.error('Error deleting message:', err));
+                                            }}
+                                            className="px-4 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 text-sm font-medium inline-flex items-center gap-2"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
                 

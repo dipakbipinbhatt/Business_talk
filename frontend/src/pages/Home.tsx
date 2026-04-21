@@ -105,7 +105,12 @@ export default function Home() {
         const nextPage = upcomingPage + 1;
         try {
             const res = await podcastAPI.getAll({ category: 'upcoming', limit: settings.upcomingBatchSize, page: nextPage });
-            setUpcomingPodcasts(prev => [...prev, ...(res.data.podcasts || [])]);
+            // Dedup by _id when appending (safety net against StrictMode / re-entry).
+            setUpcomingPodcasts(prev => {
+                const existing = new Set(prev.map(p => p._id));
+                const incoming = (res.data.podcasts || []).filter((p: Podcast) => !existing.has(p._id));
+                return [...prev, ...incoming];
+            });
             setUpcomingPage(nextPage);
         } catch (err) {
             console.error('[Home] Error loading more upcoming:', err);
@@ -149,7 +154,9 @@ export default function Home() {
 
     // ── fetchPastScroll — single source of truth for past scroll fetches ──
     // Uses a fetch ID to discard any response that arrives out of order.
-    const fetchPastScroll = useCallback((batchSize: number, initialSize: number) => {
+    // `batchSize` is retained in the signature for callsite symmetry but is no longer used
+    // inside (the IntersectionObserver + loadMorePast handle page 2+).
+    const fetchPastScroll = useCallback((_batchSize: number, initialSize: number) => {
         // Increment fetch ID — any in-flight fetch with a lower ID will be discarded
         const fetchId = ++pastFetchIdRef.current;
 
@@ -168,33 +175,21 @@ export default function Home() {
                 if (fetchId !== pastFetchIdRef.current) return;
                 const podcasts = res.data.podcasts || [];
                 const total = res.data.pagination?.total || 0;
-                setPastPodcasts(podcasts);
+                // Dedup page-1 payload in case the backend ever sends duplicates
+                const seen = new Set<string>();
+                const unique = podcasts.filter((p: Podcast) => {
+                    if (seen.has(p._id)) return false;
+                    seen.add(p._id);
+                    return true;
+                });
+                setPastPodcasts(unique);
                 setPastTotal(total);
                 setPastPage(1);
                 pastInitialLoadDone.current = true;
-
-                // If sentinel already visible after render, proactively load page 2
-                if (podcasts.length < total && pastLoadMoreRef.current) {
-                    setTimeout(() => {
-                        if (fetchId !== pastFetchIdRef.current) return;
-                        const rect = pastLoadMoreRef.current?.getBoundingClientRect();
-                        if (rect && rect.top < window.innerHeight && !isLoadingMorePastRef.current) {
-                            isLoadingMorePastRef.current = true;
-                            setIsLoadingMorePast(true);
-                            podcastAPI.getAll({ category: 'past', limit: batchSize, page: 2 })
-                                .then(r => {
-                                    if (fetchId !== pastFetchIdRef.current) return;
-                                    setPastPodcasts(prev => [...prev, ...(r.data.podcasts || [])]);
-                                    setPastPage(2);
-                                })
-                                .catch(err => console.error('[Home] Error loading page 2 past:', err))
-                                .finally(() => {
-                                    isLoadingMorePastRef.current = false;
-                                    setIsLoadingMorePast(false);
-                                });
-                        }
-                    }, 200);
-                }
+                // NOTE: The IntersectionObserver handles loading subsequent pages
+                // once the sentinel is visible. A previous implementation also
+                // proactively fetched page 2 here via setTimeout, but that raced
+                // with the observer and caused duplicate records to be appended.
             })
             .catch(err => {
                 if (fetchId !== pastFetchIdRef.current) return;
@@ -217,7 +212,13 @@ export default function Home() {
         try {
             const res = await podcastAPI.getAll({ category: 'past', limit: settings.pastBatchSize, page: nextPage });
             if (fetchId !== pastFetchIdRef.current) return; // discard if view was reset
-            setPastPodcasts(prev => [...prev, ...(res.data.podcasts || [])]);
+            // Dedup by _id when appending: defence-in-depth against StrictMode
+            // double-invocation in dev or any future race that re-triggers a load.
+            setPastPodcasts(prev => {
+                const existing = new Set(prev.map(p => p._id));
+                const incoming = (res.data.podcasts || []).filter((p: Podcast) => !existing.has(p._id));
+                return [...prev, ...incoming];
+            });
             setPastPage(nextPage);
         } catch (err) {
             console.error('[Home] Error loading more past:', err);
