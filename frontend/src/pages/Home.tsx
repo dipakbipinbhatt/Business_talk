@@ -7,17 +7,14 @@ import StayUpdated from '../components/layout/StayUpdated';
 import { podcastAPI, Podcast, settingsAPI, SiteSettings } from '../services/api';
 import logoImage from '../assets/logo.jpg';
 
-const PAGE_SIZE = 10; // records per paginated page
+const PAGE_SIZE = 10;
 
 export default function Home() {
-    // Active view & display mode
     const [activeView, setActiveView] = useState<'upcoming' | 'past'>('upcoming');
     const [isPaginated, setIsPaginated] = useState(false);
-
-    // Scroll-to-top visibility
     const [showScrollTop, setShowScrollTop] = useState(false);
 
-    // ── Upcoming: infinite scroll state ──────────────────────────────────
+    // ── Upcoming: infinite scroll ─────────────────────────────────────────
     const [upcomingPodcasts, setUpcomingPodcasts] = useState<Podcast[]>([]);
     const [upcomingTotal, setUpcomingTotal] = useState(0);
     const [upcomingPage, setUpcomingPage] = useState(1);
@@ -27,24 +24,25 @@ export default function Home() {
     const upcomingLoadMoreRef = useRef<HTMLDivElement | null>(null);
     const upcomingInitialLoadDone = useRef(false);
 
-    // ── Upcoming: paginated state ─────────────────────────────────────────
+    // ── Upcoming: paginated ───────────────────────────────────────────────
     const [upcomingPagedData, setUpcomingPagedData] = useState<Podcast[]>([]);
     const [upcomingPagedPage, setUpcomingPagedPage] = useState(1);
     const [upcomingPagedTotal, setUpcomingPagedTotal] = useState(0);
     const [isUpcomingPagedLoading, setIsUpcomingPagedLoading] = useState(false);
 
-    // ── Past: infinite scroll state ───────────────────────────────────────
+    // ── Past: infinite scroll ─────────────────────────────────────────────
     const [pastPodcasts, setPastPodcasts] = useState<Podcast[]>([]);
     const [pastTotal, setPastTotal] = useState(0);
     const [pastPage, setPastPage] = useState(1);
-    const [isPastLoading, setIsPastLoading] = useState(true);
+    const [isPastLoading, setIsPastLoading] = useState(false); // false — not loaded until needed
     const [isLoadingMorePast, setIsLoadingMorePast] = useState(false);
     const pastObserverRef = useRef<IntersectionObserver | null>(null);
     const pastLoadMoreRef = useRef<HTMLDivElement | null>(null);
     const pastInitialLoadDone = useRef(false);
-    const isLoadingMorePastRef = useRef(false); // ref mirror to avoid stale closures
+    const isLoadingMorePastRef = useRef(false);
+    const pastFetchIdRef = useRef(0); // monotonic ID to discard stale fetches
 
-    // ── Past: paginated state ─────────────────────────────────────────────
+    // ── Past: paginated ───────────────────────────────────────────────────
     const [pastPagedData, setPastPagedData] = useState<Podcast[]>([]);
     const [pastPagedPage, setPastPagedPage] = useState(1);
     const [pastPagedTotal, setPastPagedTotal] = useState(0);
@@ -53,7 +51,6 @@ export default function Home() {
     const [error, setError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
 
-    // Dynamic settings from API
     const [settings, setSettings] = useState<SiteSettings>({
         upcomingInitialLoad: 4,
         upcomingBatchSize: 4,
@@ -67,52 +64,41 @@ export default function Home() {
         document.title = "Business Talk | The World's Premier Research-Focused Podcast Series";
     }, []);
 
-    // ── Scroll-to-top listener ────────────────────────────────────────────
+    // ── Scroll-to-top ─────────────────────────────────────────────────────
     useEffect(() => {
         const onScroll = () => setShowScrollTop(window.scrollY > 300);
         window.addEventListener('scroll', onScroll, { passive: true });
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
-
     const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // ── Fetch settings ────────────────────────────────────────────────────
     useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const response = await settingsAPI.get();
-                setSettings(response.data);
-            } catch {
-                console.log('[Home] Using default settings');
-            } finally {
-                setSettingsLoaded(true);
-            }
-        };
-        fetchSettings();
+        settingsAPI.get()
+            .then(r => setSettings(r.data))
+            .catch(() => console.log('[Home] Using default settings'))
+            .finally(() => setSettingsLoaded(true));
     }, []);
 
-    // ── Fetch initial UPCOMING (infinite scroll) ──────────────────────────
+    // ── Fetch UPCOMING initial (scroll mode) ──────────────────────────────
     useEffect(() => {
         if (!settingsLoaded) return;
-        const fetch = async () => {
-            upcomingInitialLoadDone.current = false;
-            setIsUpcomingLoading(true);
-            try {
-                const res = await podcastAPI.getAll({ category: 'upcoming', limit: settings.upcomingInitialLoad, page: 1 });
+        upcomingInitialLoadDone.current = false;
+        setIsUpcomingLoading(true);
+        podcastAPI.getAll({ category: 'upcoming', limit: settings.upcomingInitialLoad, page: 1 })
+            .then(res => {
                 setUpcomingPodcasts(res.data.podcasts || []);
                 setUpcomingTotal(res.data.pagination?.total || 0);
                 setUpcomingPage(1);
-            } catch (err) {
-                console.error('[Home] Error fetching upcoming:', err);
-            } finally {
+            })
+            .catch(err => console.error('[Home] Error fetching upcoming:', err))
+            .finally(() => {
                 setIsUpcomingLoading(false);
                 upcomingInitialLoadDone.current = true;
-            }
-        };
-        fetch();
+            });
     }, [settingsLoaded, retryCount, settings.upcomingInitialLoad]);
 
-    // ── Load more UPCOMING (infinite scroll) ─────────────────────────────
+    // ── Load more UPCOMING ────────────────────────────────────────────────
     const loadMoreUpcoming = useCallback(async () => {
         if (isLoadingMoreUpcoming || upcomingPodcasts.length >= upcomingTotal) return;
         setIsLoadingMoreUpcoming(true);
@@ -128,20 +114,25 @@ export default function Home() {
         }
     }, [upcomingPodcasts.length, upcomingTotal, upcomingPage, isLoadingMoreUpcoming, settings.upcomingBatchSize]);
 
-    // ── Intersection observer: UPCOMING ───────────────────────────────────
+    // ── Observer: UPCOMING ────────────────────────────────────────────────
     useEffect(() => {
-        if (isPaginated) return; // don't observe in paginated mode
-        if (upcomingObserverRef.current) upcomingObserverRef.current.disconnect();
+        if (isPaginated || activeView !== 'upcoming') {
+            upcomingObserverRef.current?.disconnect();
+            return;
+        }
+        upcomingObserverRef.current?.disconnect();
         upcomingObserverRef.current = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && upcomingInitialLoadDone.current && !isUpcomingLoading && !isLoadingMoreUpcoming && upcomingPodcasts.length < upcomingTotal) {
+            if (entries[0].isIntersecting && upcomingInitialLoadDone.current
+                && !isUpcomingLoading && !isLoadingMoreUpcoming
+                && upcomingPodcasts.length < upcomingTotal) {
                 loadMoreUpcoming();
             }
         }, { threshold: 0.1 });
         if (upcomingLoadMoreRef.current) upcomingObserverRef.current.observe(upcomingLoadMoreRef.current);
-        return () => { if (upcomingObserverRef.current) upcomingObserverRef.current.disconnect(); };
-    }, [loadMoreUpcoming, isUpcomingLoading, isLoadingMoreUpcoming, upcomingPodcasts.length, upcomingTotal, isPaginated]);
+        return () => { upcomingObserverRef.current?.disconnect(); };
+    }, [loadMoreUpcoming, isUpcomingLoading, isLoadingMoreUpcoming, upcomingPodcasts.length, upcomingTotal, isPaginated, activeView]);
 
-    // ── Fetch UPCOMING paginated page ─────────────────────────────────────
+    // ── Fetch UPCOMING paginated ──────────────────────────────────────────
     const fetchUpcomingPaged = useCallback(async (page: number) => {
         setIsUpcomingPagedLoading(true);
         try {
@@ -156,37 +147,76 @@ export default function Home() {
         }
     }, []);
 
-    // ── Fetch initial PAST (infinite scroll) ──────────────────────────────
-    useEffect(() => {
-        if (!settingsLoaded) return;
-        const fetch = async () => {
-            pastInitialLoadDone.current = false;
-            setIsPastLoading(true);
-            setError(null);
-            try {
-                const res = await podcastAPI.getAll({ category: 'past', limit: settings.pastInitialLoad, page: 1 });
-                setPastPodcasts(res.data.podcasts || []);
-                setPastTotal(res.data.pagination?.total || 0);
-                setPastPage(1);
-            } catch (err) {
-                console.error('[Home] Error fetching past:', err);
-                setError('Failed to load podcasts. Please try again later.');
-            } finally {
-                setIsPastLoading(false);
-                pastInitialLoadDone.current = true;
-            }
-        };
-        fetch();
-    }, [settingsLoaded, retryCount, settings.pastInitialLoad]);
+    // ── fetchPastScroll — single source of truth for past scroll fetches ──
+    // Uses a fetch ID to discard any response that arrives out of order.
+    const fetchPastScroll = useCallback((batchSize: number, initialSize: number) => {
+        // Increment fetch ID — any in-flight fetch with a lower ID will be discarded
+        const fetchId = ++pastFetchIdRef.current;
 
-    // ── Load more PAST (infinite scroll) ─────────────────────────────────
+        pastInitialLoadDone.current = false;
+        isLoadingMorePastRef.current = false;
+        setIsPastLoading(true);
+        setIsLoadingMorePast(false);
+        setPastPodcasts([]);
+        setPastTotal(0);
+        setPastPage(1);
+        setError(null);
+
+        podcastAPI.getAll({ category: 'past', limit: initialSize, page: 1 })
+            .then(res => {
+                // Discard if a newer fetch was started after this one
+                if (fetchId !== pastFetchIdRef.current) return;
+                const podcasts = res.data.podcasts || [];
+                const total = res.data.pagination?.total || 0;
+                setPastPodcasts(podcasts);
+                setPastTotal(total);
+                setPastPage(1);
+                pastInitialLoadDone.current = true;
+
+                // If sentinel already visible after render, proactively load page 2
+                if (podcasts.length < total && pastLoadMoreRef.current) {
+                    setTimeout(() => {
+                        if (fetchId !== pastFetchIdRef.current) return;
+                        const rect = pastLoadMoreRef.current?.getBoundingClientRect();
+                        if (rect && rect.top < window.innerHeight && !isLoadingMorePastRef.current) {
+                            isLoadingMorePastRef.current = true;
+                            setIsLoadingMorePast(true);
+                            podcastAPI.getAll({ category: 'past', limit: batchSize, page: 2 })
+                                .then(r => {
+                                    if (fetchId !== pastFetchIdRef.current) return;
+                                    setPastPodcasts(prev => [...prev, ...(r.data.podcasts || [])]);
+                                    setPastPage(2);
+                                })
+                                .catch(err => console.error('[Home] Error loading page 2 past:', err))
+                                .finally(() => {
+                                    isLoadingMorePastRef.current = false;
+                                    setIsLoadingMorePast(false);
+                                });
+                        }
+                    }, 200);
+                }
+            })
+            .catch(err => {
+                if (fetchId !== pastFetchIdRef.current) return;
+                console.error('[Home] Error fetching past scroll:', err);
+                setError('Failed to load podcasts. Please try again later.');
+            })
+            .finally(() => {
+                if (fetchId !== pastFetchIdRef.current) return;
+                setIsPastLoading(false);
+            });
+    }, []);
+
+    // ── Load more PAST ────────────────────────────────────────────────────
     const loadMorePast = useCallback(async () => {
         if (isLoadingMorePastRef.current || pastPodcasts.length >= pastTotal) return;
         isLoadingMorePastRef.current = true;
         setIsLoadingMorePast(true);
         const nextPage = pastPage + 1;
+        const fetchId = pastFetchIdRef.current; // capture current fetch session
         try {
             const res = await podcastAPI.getAll({ category: 'past', limit: settings.pastBatchSize, page: nextPage });
+            if (fetchId !== pastFetchIdRef.current) return; // discard if view was reset
             setPastPodcasts(prev => [...prev, ...(res.data.podcasts || [])]);
             setPastPage(nextPage);
         } catch (err) {
@@ -197,30 +227,25 @@ export default function Home() {
         }
     }, [pastPodcasts.length, pastTotal, pastPage, settings.pastBatchSize]);
 
-    // ── Intersection observer: PAST ───────────────────────────────────────
+    // ── Observer: PAST ────────────────────────────────────────────────────
     useEffect(() => {
-        // Only observe when past view is active and in scroll mode
         if (isPaginated || activeView !== 'past') {
-            if (pastObserverRef.current) pastObserverRef.current.disconnect();
+            pastObserverRef.current?.disconnect();
             return;
         }
-        if (pastObserverRef.current) pastObserverRef.current.disconnect();
+        pastObserverRef.current?.disconnect();
         pastObserverRef.current = new IntersectionObserver((entries) => {
-            if (
-                entries[0].isIntersecting &&
-                pastInitialLoadDone.current &&
-                !isPastLoading &&
-                !isLoadingMorePastRef.current &&
-                pastPodcasts.length < pastTotal
-            ) {
+            if (entries[0].isIntersecting && pastInitialLoadDone.current
+                && !isPastLoading && !isLoadingMorePastRef.current
+                && pastPodcasts.length < pastTotal) {
                 loadMorePast();
             }
         }, { threshold: 0.1 });
         if (pastLoadMoreRef.current) pastObserverRef.current.observe(pastLoadMoreRef.current);
-        return () => { if (pastObserverRef.current) pastObserverRef.current.disconnect(); };
+        return () => { pastObserverRef.current?.disconnect(); };
     }, [loadMorePast, isPastLoading, pastPodcasts.length, pastTotal, isPaginated, activeView]);
 
-    // ── Fetch PAST paginated page ─────────────────────────────────────────
+    // ── Fetch PAST paginated ──────────────────────────────────────────────
     const fetchPastPaged = useCallback(async (page: number) => {
         setIsPastPagedLoading(true);
         setError(null);
@@ -237,53 +262,44 @@ export default function Home() {
         }
     }, []);
 
-    // ── When switching TO paginated mode, fetch page 1 for active view ────
-    // When switching BACK to scroll, reset past state so it re-fetches cleanly
-    useEffect(() => {
-        if (!settingsLoaded) return;
-        if (isPaginated) {
-            if (activeView === 'upcoming') fetchUpcomingPaged(1);
-            else fetchPastPaged(1);
-        } else {
-            // Returning to scroll mode — re-fetch past cleanly
-            fetchPastScroll();
-        }
-    }, [isPaginated, settingsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // ── Fetch past scroll data fresh (used on view switch & mode switch) ───
-    const fetchPastScroll = useCallback(() => {
-        pastInitialLoadDone.current = false;
-        isLoadingMorePastRef.current = false;
-        setIsPastLoading(true);
-        setIsLoadingMorePast(false);
-        setPastPodcasts([]);
-        setPastPage(1);
-        podcastAPI.getAll({ category: 'past', limit: settings.pastInitialLoad, page: 1 })
-            .then(res => {
-                setPastPodcasts(res.data.podcasts || []);
-                setPastTotal(res.data.pagination?.total || 0);
-                setPastPage(1);
-            })
-            .catch(err => console.error('[Home] Error fetching past scroll:', err))
-            .finally(() => {
-                setIsPastLoading(false);
-                pastInitialLoadDone.current = true;
-            });
-    }, [settings.pastInitialLoad]);
-
-    // ── When switching view ───────────────────────────────────────────────
-    const handleViewSwitch = (view: 'upcoming' | 'past') => {
+    // ── Handle view switch ────────────────────────────────────────────────
+    const handleViewSwitch = useCallback((view: 'upcoming' | 'past') => {
+        if (view === activeView) return; // no-op if already on this view
         setActiveView(view);
         if (isPaginated) {
             if (view === 'upcoming') fetchUpcomingPaged(1);
             else fetchPastPaged(1);
         } else if (view === 'past') {
-            // Always re-fetch past when switching to it in scroll mode
-            fetchPastScroll();
+            fetchPastScroll(settings.pastBatchSize, settings.pastInitialLoad);
+        }
+        // switching back to upcoming needs no fetch — data already loaded
+    }, [activeView, isPaginated, fetchUpcomingPaged, fetchPastPaged, fetchPastScroll, settings.pastBatchSize, settings.pastInitialLoad]);
+
+    // ── Handle pagination mode toggle ─────────────────────────────────────
+    const wasPaginatedRef = useRef(false);
+    useEffect(() => {
+        if (!settingsLoaded) return;
+        if (isPaginated) {
+            wasPaginatedRef.current = true;
+            if (activeView === 'upcoming') fetchUpcomingPaged(1);
+            else fetchPastPaged(1);
+        } else if (wasPaginatedRef.current) {
+            // Returning from paginated → scroll: re-fetch past if on past view
+            wasPaginatedRef.current = false;
+            if (activeView === 'past') {
+                fetchPastScroll(settings.pastBatchSize, settings.pastInitialLoad);
+            }
+        }
+    }, [isPaginated, settingsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleRetry = () => {
+        setError(null);
+        if (activeView === 'past' && !isPaginated) {
+            fetchPastScroll(settings.pastBatchSize, settings.pastInitialLoad);
+        } else {
+            setRetryCount(prev => prev + 1);
         }
     };
-
-    const handleRetry = () => { setError(null); setRetryCount(prev => prev + 1); };
 
     // ── Derived pagination values ─────────────────────────────────────────
     const pagedData      = activeView === 'upcoming' ? upcomingPagedData  : pastPagedData;
@@ -299,7 +315,6 @@ export default function Home() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Build page number array with ellipsis logic
     const getPageNumbers = () => {
         if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
         const pages: (number | '...')[] = [];
@@ -350,8 +365,6 @@ export default function Home() {
             <div className="sticky top-16 z-30 bg-white border-b border-gray-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between py-3 gap-3">
-
-                        {/* Left: View tab buttons */}
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => handleViewSwitch('upcoming')}
@@ -374,8 +387,6 @@ export default function Home() {
                                 Previous Episodes
                             </button>
                         </div>
-
-                        {/* Right: Pagination toggle */}
                         <button
                             onClick={() => setIsPaginated(prev => !prev)}
                             title={isPaginated ? 'Switch to Infinite Scroll' : 'Switch to Pagination'}
@@ -398,8 +409,6 @@ export default function Home() {
             <section className={`py-8 sm:py-12 ${activeView === 'past' ? 'bg-gray-100 shadow-inner' : 'bg-white'}`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
-
-                        {/* Section header */}
                         <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
                             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
                                 {activeView === 'upcoming' ? 'Upcoming Podcast Episodes' : 'Previous Episodes'}
@@ -418,7 +427,6 @@ export default function Home() {
                             )}
                         </div>
 
-                        {/* ── Content: animated view swap ────────────────── */}
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={activeView}
@@ -428,11 +436,10 @@ export default function Home() {
                                 transition={{ duration: 0.25 }}
                             >
                                 {isPaginated ? (
-                                    /* ── PAGINATED VIEW ── */
                                     <>
                                         {isPagedLoading ? (
                                             <div className="grid md:grid-cols-2 gap-6">
-                                                {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                                                {Array.from({ length: 4 }).map((_, i) => (
                                                     <div key={i} className={`rounded-2xl h-80 animate-pulse ${activeView === 'past' ? 'bg-gray-200' : 'bg-gray-100'}`} />
                                                 ))}
                                             </div>
@@ -447,63 +454,42 @@ export default function Home() {
                                                 ))}
                                             </div>
                                         )}
-
-                                        {/* Pagination controls */}
                                         {!isPagedLoading && totalPages > 1 && (
                                             <div className="flex items-center justify-center gap-1 mt-10 flex-wrap">
-                                                {/* Prev */}
-                                                <button
-                                                    onClick={() => goToPage(pagedPage - 1)}
-                                                    disabled={pagedPage === 1}
-                                                    className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:border-maroon-400 hover:text-maroon-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                                >
+                                                <button onClick={() => goToPage(pagedPage - 1)} disabled={pagedPage === 1}
+                                                    className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:border-maroon-400 hover:text-maroon-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                                                     ← Prev
                                                 </button>
-
-                                                {/* Page numbers */}
                                                 {getPageNumbers().map((p, idx) =>
                                                     p === '...' ? (
-                                                        <span key={`ellipsis-${idx}`} className="px-2 py-2 text-gray-400 text-sm select-none">…</span>
+                                                        <span key={`e-${idx}`} className="px-2 py-2 text-gray-400 text-sm select-none">…</span>
                                                     ) : (
-                                                        <button
-                                                            key={p}
-                                                            onClick={() => goToPage(p as number)}
-                                                            className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
-                                                                pagedPage === p
-                                                                    ? 'bg-maroon-700 text-white shadow-sm'
-                                                                    : 'border border-gray-300 text-gray-600 hover:border-maroon-400 hover:text-maroon-700'
-                                                            }`}
-                                                        >
+                                                        <button key={p} onClick={() => goToPage(p as number)}
+                                                            className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${pagedPage === p ? 'bg-maroon-700 text-white shadow-sm' : 'border border-gray-300 text-gray-600 hover:border-maroon-400 hover:text-maroon-700'}`}>
                                                             {p}
                                                         </button>
                                                     )
                                                 )}
-
-                                                {/* Next */}
-                                                <button
-                                                    onClick={() => goToPage(pagedPage + 1)}
-                                                    disabled={pagedPage === totalPages}
-                                                    className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:border-maroon-400 hover:text-maroon-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                                                >
+                                                <button onClick={() => goToPage(pagedPage + 1)} disabled={pagedPage === totalPages}
+                                                    className="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:border-maroon-400 hover:text-maroon-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
                                                     Next →
                                                 </button>
                                             </div>
                                         )}
                                     </>
                                 ) : activeView === 'upcoming' ? (
-                                    /* ── UPCOMING INFINITE SCROLL ── */
                                     <>
                                         {isUpcomingLoading ? (
                                             <div className="grid md:grid-cols-2 gap-6">
-                                                {[1, 2, 3, 4].map(i => <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />)}
+                                                {[1,2,3,4].map(i => <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />)}
                                             </div>
                                         ) : upcomingPodcasts.length === 0 ? (
                                             <div className="text-center py-12"><p className="text-gray-500">No upcoming podcasts scheduled. Check back soon!</p></div>
                                         ) : (
                                             <>
                                                 <div className="grid md:grid-cols-2 gap-6">
-                                                    {upcomingPodcasts.map((podcast: Podcast) => (
-                                                        <PodcastCard key={podcast._id} podcast={podcast} variant="thumbnail-only" />
+                                                    {upcomingPodcasts.map((p: Podcast) => (
+                                                        <PodcastCard key={p._id} podcast={p} variant="thumbnail-only" />
                                                     ))}
                                                 </div>
                                                 {upcomingPodcasts.length < upcomingTotal && (
@@ -520,24 +506,28 @@ export default function Home() {
                                         )}
                                     </>
                                 ) : (
-                                    /* ── PAST INFINITE SCROLL ── */
                                     <>
                                         {isPastLoading ? (
                                             <div className="grid md:grid-cols-2 gap-6">
-                                                {[1, 2, 3, 4].map(i => <div key={i} className="bg-gray-200 rounded-lg h-96 animate-pulse" />)}
+                                                {[1,2,3,4].map(i => <div key={i} className="bg-gray-200 rounded-lg h-96 animate-pulse" />)}
                                             </div>
                                         ) : error ? (
                                             <div className="text-center py-12">
                                                 <p className="text-red-600 mb-4">{error}</p>
                                                 <button onClick={handleRetry} className="px-6 py-3 bg-maroon-700 text-white font-semibold rounded-lg hover:bg-maroon-800 transition-colors">Retry</button>
                                             </div>
-                                        ) : pastPodcasts.length === 0 ? (
+                                        ) : pastPodcasts.length === 0 && pastInitialLoadDone.current ? (
                                             <div className="text-center py-12"><p className="text-gray-500">No previous podcasts available yet.</p></div>
+                                        ) : pastPodcasts.length === 0 ? (
+                                            // Still waiting for first fetch (just switched to Past view)
+                                            <div className="grid md:grid-cols-2 gap-6">
+                                                {[1,2,3,4].map(i => <div key={i} className="bg-gray-200 rounded-lg h-96 animate-pulse" />)}
+                                            </div>
                                         ) : (
                                             <>
                                                 <div className="grid md:grid-cols-2 gap-6">
-                                                    {pastPodcasts.map((podcast: Podcast) => (
-                                                        <PodcastCard key={podcast._id} podcast={podcast} variant="grid" />
+                                                    {pastPodcasts.map((p: Podcast) => (
+                                                        <PodcastCard key={p._id} podcast={p} variant="grid" />
                                                     ))}
                                                 </div>
                                                 {pastPodcasts.length < pastTotal && (
@@ -560,19 +550,14 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* Stay Updated */}
             <StayUpdated />
 
-            {/* ── Scroll-to-top button ─────────────────────────────────── */}
             <AnimatePresence>
                 {showScrollTop && (
                     <motion.button
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.2 }}
-                        onClick={scrollToTop}
-                        aria-label="Scroll to top"
+                        initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.2 }}
+                        onClick={scrollToTop} aria-label="Scroll to top"
                         className="fixed bottom-6 right-6 z-50 w-11 h-11 bg-maroon-700 hover:bg-maroon-800 text-white rounded-full shadow-lg flex items-center justify-center transition-colors duration-200"
                     >
                         <ArrowUp className="w-5 h-5" />
