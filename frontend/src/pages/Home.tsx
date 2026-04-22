@@ -20,9 +20,12 @@ export default function Home() {
     const [upcomingPage, setUpcomingPage] = useState(1);
     const [isUpcomingLoading, setIsUpcomingLoading] = useState(true);
     const [isLoadingMoreUpcoming, setIsLoadingMoreUpcoming] = useState(false);
+    const [upcomingExhausted, setUpcomingExhausted] = useState(false);
     const upcomingObserverRef = useRef<IntersectionObserver | null>(null);
     const upcomingLoadMoreRef = useRef<HTMLDivElement | null>(null);
     const upcomingInitialLoadDone = useRef(false);
+    const isLoadingMoreUpcomingRef = useRef(false);
+    const upcomingExhaustedRef = useRef(false);
 
     // ── Upcoming: paginated ───────────────────────────────────────────────
     const [upcomingPagedData, setUpcomingPagedData] = useState<Podcast[]>([]);
@@ -36,11 +39,13 @@ export default function Home() {
     const [pastPage, setPastPage] = useState(1);
     const [isPastLoading, setIsPastLoading] = useState(false); // false — not loaded until needed
     const [isLoadingMorePast, setIsLoadingMorePast] = useState(false);
+    const [pastExhausted, setPastExhausted] = useState(false);
     const pastObserverRef = useRef<IntersectionObserver | null>(null);
     const pastLoadMoreRef = useRef<HTMLDivElement | null>(null);
     const pastInitialLoadDone = useRef(false);
     const isLoadingMorePastRef = useRef(false);
     const pastFetchIdRef = useRef(0); // monotonic ID to discard stale fetches
+    const pastExhaustedRef = useRef(false);
 
     // ── Past: paginated ───────────────────────────────────────────────────
     const [pastPagedData, setPastPagedData] = useState<Podcast[]>([]);
@@ -84,12 +89,30 @@ export default function Home() {
     useEffect(() => {
         if (!settingsLoaded) return;
         upcomingInitialLoadDone.current = false;
+        isLoadingMoreUpcomingRef.current = false;
+        upcomingExhaustedRef.current = false;
+        setUpcomingExhausted(false);
         setIsUpcomingLoading(true);
         podcastAPI.getAll({ category: 'upcoming', limit: settings.upcomingInitialLoad, page: 1 })
             .then(res => {
-                setUpcomingPodcasts(res.data.podcasts || []);
-                setUpcomingTotal(res.data.pagination?.total || 0);
+                const incoming = res.data.podcasts || [];
+                const total = res.data.pagination?.total || 0;
+                // Dedup defensively in case the backend ever returns duplicates.
+                const seen = new Set<string>();
+                const unique = incoming.filter((p: Podcast) => {
+                    if (seen.has(p._id)) return false;
+                    seen.add(p._id);
+                    return true;
+                });
+                setUpcomingPodcasts(unique);
+                setUpcomingTotal(total);
                 setUpcomingPage(1);
+                // If we already got everything, mark the stream exhausted so the
+                // observer can't trigger a doomed page-2 fetch.
+                if (unique.length >= total) {
+                    upcomingExhaustedRef.current = true;
+                    setUpcomingExhausted(true);
+                }
             })
             .catch(err => console.error('[Home] Error fetching upcoming:', err))
             .finally(() => {
@@ -99,25 +122,44 @@ export default function Home() {
     }, [settingsLoaded, retryCount, settings.upcomingInitialLoad]);
 
     // ── Load more UPCOMING ────────────────────────────────────────────────
+    // Guard uses refs (not state) so concurrent observer firings can't race
+    // past the check between a re-render and the flag being flipped. If a page
+    // returns no new rows after dedup, we mark the stream exhausted to stop the
+    // observer from firing again forever (can happen under MongoDB sort
+    // instability where consecutive pages overlap and dedup empties them).
     const loadMoreUpcoming = useCallback(async () => {
-        if (isLoadingMoreUpcoming || upcomingPodcasts.length >= upcomingTotal) return;
+        if (
+            isLoadingMoreUpcomingRef.current ||
+            upcomingExhaustedRef.current ||
+            upcomingPodcasts.length >= upcomingTotal
+        ) return;
+        isLoadingMoreUpcomingRef.current = true;
         setIsLoadingMoreUpcoming(true);
         const nextPage = upcomingPage + 1;
         try {
             const res = await podcastAPI.getAll({ category: 'upcoming', limit: settings.upcomingBatchSize, page: nextPage });
-            // Dedup by _id when appending (safety net against StrictMode / re-entry).
+            const incoming = res.data.podcasts || [];
+            let addedCount = 0;
             setUpcomingPodcasts(prev => {
                 const existing = new Set(prev.map(p => p._id));
-                const incoming = (res.data.podcasts || []).filter((p: Podcast) => !existing.has(p._id));
-                return [...prev, ...incoming];
+                const uniqueNew = incoming.filter((p: Podcast) => !existing.has(p._id));
+                addedCount = uniqueNew.length;
+                return [...prev, ...uniqueNew];
             });
             setUpcomingPage(nextPage);
+            // If this fetch didn't add anything new (empty response, or every
+            // row was a duplicate of what we already have), the stream is done.
+            if (addedCount === 0) {
+                upcomingExhaustedRef.current = true;
+                setUpcomingExhausted(true);
+            }
         } catch (err) {
             console.error('[Home] Error loading more upcoming:', err);
         } finally {
+            isLoadingMoreUpcomingRef.current = false;
             setIsLoadingMoreUpcoming(false);
         }
-    }, [upcomingPodcasts.length, upcomingTotal, upcomingPage, isLoadingMoreUpcoming, settings.upcomingBatchSize]);
+    }, [upcomingPodcasts.length, upcomingTotal, upcomingPage, settings.upcomingBatchSize]);
 
     // ── Observer: UPCOMING ────────────────────────────────────────────────
     useEffect(() => {
@@ -127,15 +169,25 @@ export default function Home() {
         }
         upcomingObserverRef.current?.disconnect();
         upcomingObserverRef.current = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && upcomingInitialLoadDone.current
-                && !isUpcomingLoading && !isLoadingMoreUpcoming
-                && upcomingPodcasts.length < upcomingTotal) {
+            if (
+                entries[0].isIntersecting
+                && upcomingInitialLoadDone.current
+                && !isUpcomingLoading
+                && !isLoadingMoreUpcomingRef.current
+                && !upcomingExhaustedRef.current
+                && upcomingPodcasts.length < upcomingTotal
+            ) {
                 loadMoreUpcoming();
             }
-        }, { threshold: 0.1 });
+        }, {
+            threshold: 0,
+            // Fire 200px before the sentinel enters the viewport — smoother UX
+            // and tolerant of zero-height sentinels at the viewport edge.
+            rootMargin: '0px 0px 200px 0px',
+        });
         if (upcomingLoadMoreRef.current) upcomingObserverRef.current.observe(upcomingLoadMoreRef.current);
         return () => { upcomingObserverRef.current?.disconnect(); };
-    }, [loadMoreUpcoming, isUpcomingLoading, isLoadingMoreUpcoming, upcomingPodcasts.length, upcomingTotal, isPaginated, activeView]);
+    }, [loadMoreUpcoming, isUpcomingLoading, upcomingPodcasts.length, upcomingTotal, isPaginated, activeView, upcomingExhausted]);
 
     // ── Fetch UPCOMING paginated ──────────────────────────────────────────
     const fetchUpcomingPaged = useCallback(async (page: number) => {
@@ -162,6 +214,8 @@ export default function Home() {
 
         pastInitialLoadDone.current = false;
         isLoadingMorePastRef.current = false;
+        pastExhaustedRef.current = false;
+        setPastExhausted(false);
         setIsPastLoading(true);
         setIsLoadingMorePast(false);
         setPastPodcasts([]);
@@ -186,10 +240,14 @@ export default function Home() {
                 setPastTotal(total);
                 setPastPage(1);
                 pastInitialLoadDone.current = true;
+                // If the first page already contains everything, mark exhausted
+                // so the observer doesn't hammer the API looking for more.
+                if (unique.length >= total) {
+                    pastExhaustedRef.current = true;
+                    setPastExhausted(true);
+                }
                 // NOTE: The IntersectionObserver handles loading subsequent pages
-                // once the sentinel is visible. A previous implementation also
-                // proactively fetched page 2 here via setTimeout, but that raced
-                // with the observer and caused duplicate records to be appended.
+                // once the sentinel is visible.
             })
             .catch(err => {
                 if (fetchId !== pastFetchIdRef.current) return;
@@ -203,8 +261,15 @@ export default function Home() {
     }, []);
 
     // ── Load more PAST ────────────────────────────────────────────────────
+    // Same pattern as loadMoreUpcoming: atomic ref guard + exhaustion detection
+    // when a fetch returns no new rows (protects against MongoDB sort instability
+    // where overlapping pages get dedup-emptied, causing an infinite observer loop).
     const loadMorePast = useCallback(async () => {
-        if (isLoadingMorePastRef.current || pastPodcasts.length >= pastTotal) return;
+        if (
+            isLoadingMorePastRef.current ||
+            pastExhaustedRef.current ||
+            pastPodcasts.length >= pastTotal
+        ) return;
         isLoadingMorePastRef.current = true;
         setIsLoadingMorePast(true);
         const nextPage = pastPage + 1;
@@ -212,14 +277,19 @@ export default function Home() {
         try {
             const res = await podcastAPI.getAll({ category: 'past', limit: settings.pastBatchSize, page: nextPage });
             if (fetchId !== pastFetchIdRef.current) return; // discard if view was reset
-            // Dedup by _id when appending: defence-in-depth against StrictMode
-            // double-invocation in dev or any future race that re-triggers a load.
+            const incoming = res.data.podcasts || [];
+            let addedCount = 0;
             setPastPodcasts(prev => {
                 const existing = new Set(prev.map(p => p._id));
-                const incoming = (res.data.podcasts || []).filter((p: Podcast) => !existing.has(p._id));
-                return [...prev, ...incoming];
+                const uniqueNew = incoming.filter((p: Podcast) => !existing.has(p._id));
+                addedCount = uniqueNew.length;
+                return [...prev, ...uniqueNew];
             });
             setPastPage(nextPage);
+            if (addedCount === 0) {
+                pastExhaustedRef.current = true;
+                setPastExhausted(true);
+            }
         } catch (err) {
             console.error('[Home] Error loading more past:', err);
         } finally {
@@ -236,15 +306,23 @@ export default function Home() {
         }
         pastObserverRef.current?.disconnect();
         pastObserverRef.current = new IntersectionObserver((entries) => {
-            if (entries[0].isIntersecting && pastInitialLoadDone.current
-                && !isPastLoading && !isLoadingMorePastRef.current
-                && pastPodcasts.length < pastTotal) {
+            if (
+                entries[0].isIntersecting
+                && pastInitialLoadDone.current
+                && !isPastLoading
+                && !isLoadingMorePastRef.current
+                && !pastExhaustedRef.current
+                && pastPodcasts.length < pastTotal
+            ) {
                 loadMorePast();
             }
-        }, { threshold: 0.1 });
+        }, {
+            threshold: 0,
+            rootMargin: '0px 0px 200px 0px',
+        });
         if (pastLoadMoreRef.current) pastObserverRef.current.observe(pastLoadMoreRef.current);
         return () => { pastObserverRef.current?.disconnect(); };
-    }, [loadMorePast, isPastLoading, pastPodcasts.length, pastTotal, isPaginated, activeView]);
+    }, [loadMorePast, isPastLoading, pastPodcasts.length, pastTotal, isPaginated, activeView, pastExhausted]);
 
     // ── Fetch PAST paginated ──────────────────────────────────────────────
     const fetchPastPaged = useCallback(async (page: number) => {
@@ -336,12 +414,12 @@ export default function Home() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-center">
                         <div className="flex justify-center mb-6">
-                            <img src={logoImage} alt="Business Talk Logo" className="w-40 h-40 object-contain rounded-full shadow-lg" />
+                            <img src={logoImage} alt="Business Talk Logo" className="w-28 h-28 sm:w-40 sm:h-40 object-contain rounded-full shadow-lg" />
                         </div>
                         <div className="flex justify-center mb-8">
                             <img src="/banner.png" alt="Business Talk Banner" className="w-full max-w-4xl object-contain rounded-lg shadow-md" fetchPriority="high" decoding="async" />
                         </div>
-                        <p className="text-base text-gray-800 max-w-4xl mx-auto mb-6 text-justify" style={{ lineHeight: '1.75rem' }}>
+                        <p className="text-sm sm:text-base text-gray-800 max-w-4xl mx-auto mb-6 text-justify" style={{ lineHeight: '1.75rem' }}>
                             Welcome to Business Talk, your premier podcast for cutting-edge trends,
                             groundbreaking research, valuable insights from notable books, and engaging
                             discussions from the realms of business and academia. Whether you're an academic scholar, researcher,
@@ -349,11 +427,11 @@ export default function Home() {
                             spark actionable ideas. Our goal is to deliver valuable research insights from the world's renowned scholars,
                             sharing their unique perspectives and expertise.
                         </p>
-                        <p className="text-base text-gray-800 max-w-4xl mx-auto mb-6 text-justify" style={{ lineHeight: '1.75rem' }}>
+                        <p className="text-sm sm:text-base text-gray-800 max-w-4xl mx-auto mb-6 text-justify" style={{ lineHeight: '1.75rem' }}>
                             <strong className="text-gray-900">How do we select our speakers?:</strong> The Business Talk committee identifies speakers after a meticulous screening process. These
                             experts are then invited. That is, participation as a speaker is by invitation only. We remain committed to delivering free, high-quality content to our research community and are dedicated to maintaining this model in the future.
                         </p>
-                        <p className="text-base text-gray-800 max-w-4xl mx-auto text-justify" style={{ lineHeight: '1.75rem' }}>
+                        <p className="text-sm sm:text-base text-gray-800 max-w-4xl mx-auto text-justify" style={{ lineHeight: '1.75rem' }}>
                             Brought to you by <a href="https://www.globalmanagementconsultancy.com/" target="_blank" rel="noopener noreferrer" className="text-maroon-700 hover:underline font-medium">Global Management Consultancy</a>,
                             we are committed to driving innovation and excellence in the business community. The podcast recordings are available in both video and audio formats on this webpage.
                             Simply check the footer for links to all our podcast platforms!
@@ -365,41 +443,71 @@ export default function Home() {
             {/* ── Sticky Control Bar ───────────────────────────────────── */}
             <div className="sticky top-16 z-30 bg-white border-b border-gray-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between py-3 gap-3">
-                        <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between py-3 gap-2 sm:gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
                             <button
                                 onClick={() => handleViewSwitch('upcoming')}
-                                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
+                                className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                                     activeView === 'upcoming'
                                         ? 'bg-maroon-700 text-white shadow-sm'
                                         : 'bg-white text-gray-600 border border-gray-300 hover:border-maroon-300 hover:text-maroon-700'
                                 }`}
                             >
-                                Upcoming Episodes
+                                <span className="sm:hidden">Upcoming</span>
+                                <span className="hidden sm:inline">Upcoming Episodes</span>
                             </button>
                             <button
                                 onClick={() => handleViewSwitch('past')}
-                                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
+                                className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                                     activeView === 'past'
                                         ? 'bg-maroon-700 text-white shadow-sm'
                                         : 'bg-white text-gray-600 border border-gray-300 hover:border-maroon-300 hover:text-maroon-700'
                                 }`}
                             >
-                                Previous Episodes
+                                <span className="sm:hidden">Previous</span>
+                                <span className="hidden sm:inline">Previous Episodes</span>
                             </button>
                         </div>
+                        {/* iOS toggle — mobile only */}
+                        <div
+                            className="sm:hidden flex items-center flex-shrink-0 bg-gray-100 rounded-full p-0.5 border border-gray-200"
+                            style={{ minWidth: 0 }}
+                        >
+                            <button
+                                onClick={() => setIsPaginated(false)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                                    !isPaginated
+                                        ? 'bg-maroon-700 text-white shadow-sm'
+                                        : 'text-gray-500'
+                                }`}
+                            >
+                                Scroll
+                            </button>
+                            <button
+                                onClick={() => setIsPaginated(true)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                                    isPaginated
+                                        ? 'bg-maroon-700 text-white shadow-sm'
+                                        : 'text-gray-500'
+                                }`}
+                            >
+                                Paginated
+                            </button>
+                        </div>
+
+                        {/* Original button — desktop only */}
                         <button
                             onClick={() => setIsPaginated(prev => !prev)}
                             title={isPaginated ? 'Switch to Infinite Scroll' : 'Switch to Pagination'}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 whitespace-nowrap ${
+                            className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
                                 isPaginated
                                     ? 'bg-maroon-700 text-white border-maroon-700 shadow-sm'
                                     : 'bg-white text-gray-600 border-gray-300 hover:border-maroon-300 hover:text-maroon-700'
                             }`}
                         >
                             {isPaginated
-                                ? <><LayoutGrid className="w-4 h-4" /><span className="hidden sm:inline">Paginated</span></>
-                                : <><AlignJustify className="w-4 h-4" /><span className="hidden sm:inline">Scroll</span></>
+                                ? <><LayoutGrid className="w-4 h-4" /><span>Paginated</span></>
+                                : <><AlignJustify className="w-4 h-4" /><span>Scroll</span></>
                             }
                         </button>
                     </div>
@@ -411,20 +519,27 @@ export default function Home() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
                         <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
-                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
-                                {activeView === 'upcoming' ? 'Upcoming Podcast Episodes' : 'Previous Episodes'}
-                            </h2>
-                            {activeView === 'upcoming' ? (
-                                <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-100 text-green-700 font-semibold rounded-full text-xs sm:text-sm whitespace-nowrap">
-                                    {upcomingTotal} Scheduled
-                                </span>
-                            ) : (
-                                pastTotal > 0 && (
-                                    <Link to="/podcasts" className="flex items-center space-x-2 text-maroon-700 hover:text-maroon-800 font-semibold transition-colors group whitespace-nowrap text-sm sm:text-base">
-                                        <span>View&nbsp;All</span>
-                                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-                                    </Link>
-                                )
+                            <div className="flex flex-wrap items-center gap-3 min-w-0">
+                                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
+                                    {activeView === 'upcoming' ? 'Upcoming Episodes' : 'Previous Episodes'}
+                                </h2>
+                                {activeView === 'upcoming' ? (
+                                    <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-green-100 text-green-700 font-semibold rounded-full text-xs sm:text-sm whitespace-nowrap">
+                                        {upcomingTotal} Scheduled
+                                    </span>
+                                ) : (
+                                    pastTotal > 0 && (
+                                        <span className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-100 text-blue-700 font-semibold rounded-full text-xs sm:text-sm whitespace-nowrap">
+                                            {pastTotal} Completed
+                                        </span>
+                                    )
+                                )}
+                            </div>
+                            {activeView === 'past' && pastTotal > 0 && (
+                                <Link to="/podcasts" className="flex items-center space-x-2 text-maroon-700 hover:text-maroon-800 font-semibold transition-colors group whitespace-nowrap text-sm sm:text-base">
+                                    <span>View&nbsp;All</span>
+                                    <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform flex-shrink-0" />
+                                </Link>
                             )}
                         </div>
 
@@ -493,8 +608,8 @@ export default function Home() {
                                                         <PodcastCard key={p._id} podcast={p} variant="thumbnail-only" />
                                                     ))}
                                                 </div>
-                                                {upcomingPodcasts.length < upcomingTotal && (
-                                                    <div ref={upcomingLoadMoreRef} className="flex justify-center py-8">
+                                                {upcomingPodcasts.length < upcomingTotal && !upcomingExhausted && (
+                                                    <div ref={upcomingLoadMoreRef} className="flex justify-center py-8 min-h-[48px]">
                                                         {isLoadingMoreUpcoming && (
                                                             <div className="flex items-center gap-2 text-maroon-700">
                                                                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-maroon-700" />
@@ -531,8 +646,8 @@ export default function Home() {
                                                         <PodcastCard key={p._id} podcast={p} variant="grid" />
                                                     ))}
                                                 </div>
-                                                {pastPodcasts.length < pastTotal && (
-                                                    <div ref={pastLoadMoreRef} className="flex justify-center mt-8">
+                                                {pastPodcasts.length < pastTotal && !pastExhausted && (
+                                                    <div ref={pastLoadMoreRef} className="flex justify-center py-8 min-h-[48px]">
                                                         {isLoadingMorePast && (
                                                             <div className="flex items-center gap-2 text-maroon-700">
                                                                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-maroon-700" />
