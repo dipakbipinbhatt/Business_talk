@@ -398,7 +398,7 @@ export default function Home() {
         if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
         const pages: (number | '...')[] = [];
         if (pagedPage <= 4) {
-            pages.push(1, 2, 3, 4, 5, '...', totalPages);
+            pages.push(1, 2, 3, '...', totalPages);
         } else if (pagedPage >= totalPages - 3) {
             pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
         } else {
