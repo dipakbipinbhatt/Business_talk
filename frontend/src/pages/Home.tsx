@@ -432,7 +432,7 @@ export default function Home() {
                             experts are then invited. That is, participation as a speaker is by invitation only. We remain committed to delivering free, high-quality content to our research community and are dedicated to maintaining this model in the future.
                         </p>
                         <p className="text-sm sm:text-base text-gray-800 max-w-4xl mx-auto text-justify" style={{ lineHeight: '1.75rem' }}>
-                            Brought to you by <a href="https://www.globalmanagementconsultancy.com/" target="_blank" rel="noopener noreferrer" className="text-maroon-700 hover:underline font-medium">Global Management Consultancy</a>,
+                            Brought to you by <strong className="text-gray-900"> Global Management Consultancy</strong>,
                             we are committed to driving innovation and excellence in the business community. The podcast recordings are available in both video and audio formats on this webpage.
                             Simply check the footer for links to all our podcast platforms!
                         </p>
